@@ -159,7 +159,7 @@ Here an example:
 ```python
 from terra_package.core import simulate_shock
 
-terra_ds = TerraDataset("../trade_sample.csv")
+terra_ds = TerraDataset(url)
 
 # Shock: remove country A as supplier to country B in period "2020M01"
 simulated = simulate_shock(
