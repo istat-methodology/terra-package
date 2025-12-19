@@ -8,7 +8,7 @@ A Python package for performing network analysis, time series aggregation and Co
 
 You can install the package locally using `pip`:
 
-git clone [text](https://github.com/istat-methodology/terra-package)
+git clone https://github.com/istat-methodology/terra-package
 cd terra-package
 pip install -e .
 
