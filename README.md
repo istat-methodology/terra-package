@@ -14,8 +14,8 @@ pip install -e .
 
 
 ## Requirements
-Python >= 3.8
-pandas >= 1.0
+Python >= 3.8 <br />
+pandas >= 1.0 <br />
 networkx >= 2.0
 
 ## Usage
