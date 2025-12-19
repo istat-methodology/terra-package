@@ -1,6 +1,6 @@
 # Terra-package
 
-A Python package for performing network analysis and time series aggregation on dataframes with columns: `source`, `target`, `period`, and `weight`. The package calculates network metrics for each node and returns a new dataframe with the results.
+A Python package for performing network analysis, time series aggregation and Constant Elasticity of Substitution (CES) simulation on trade dataframes. The package calculates network metrics for each node and returns a new dataframe with the results.
 
 ---
 
@@ -8,7 +8,7 @@ A Python package for performing network analysis and time series aggregation on 
 
 You can install the package locally using `pip`:
 
-git clone <your-repo-url> 
+git clone [text](https://github.com/istat-methodology/terra-package)
 cd terra-package
 pip install -e .
 
