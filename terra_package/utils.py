@@ -14,7 +14,7 @@ class TerraDataset:
             Default is ["I", "E"].
         data (pd.DataFrame): The validated (and possibly transformed) dataset.
         two_values (bool): Whether the dataset includes a second numerical 
-            column (value2).
+            column (weight2).
         cols_map (dict): Optional mapping to rename columns from the raw 
             file.
         sep (str): Column separator used when reading the CSV file.
@@ -34,7 +34,7 @@ class TerraDataset:
                 labels for imports and exports in the dataset. 
                 Default is ["I", "E"].
             two_values (bool, optional): If True, requires and validates 
-                an additional column "value2".
+                an additional column "weight2".
             cols_map (dict, optional): A dictionary for renaming columns 
                 in the dataset (raw → expected names).
             sep (str, optional): Field separator used when reading the CSV file.
@@ -60,7 +60,7 @@ class TerraDataset:
         Performs base validation checks and, if required, applies the
         trade-to-network conversion. If cols_map is provided, the 
         dataset columns are renamed before validation. This method also 
-        handles validation of the optional second value column ("value2")
+        handles validation of the optional second value column ("weight2")
         when two_values=True.
 
         Args:
@@ -105,45 +105,44 @@ class TerraDataset:
         This method validates:
             - presence of required columns
             - absence of duplicate edges
-            - numeric validity of "value" and, if two_values=True, 
-            also "value2"
+            - numeric validity of "weight" and, if two_values=True, 
+            also "weight2"
 
         Args:
             df (pd.DataFrame): The dataset to validate.
 
         Raises:
             ValueError: If required columns are missing, if duplicate 
-            edges are found, or if numeric conversion of 'value' 
-            (or 'value2' when applicable) fails.
+            edges are found, or if numeric conversion of 'weight' 
+            (or 'weight2' when applicable) fails.
         """
         if not set(self.required_keys).issubset(df.columns):
             raise ValueError(f"The dataframe must contain columns: {cols}")
         
-        cols = [c for c in self.required_keys if c not in ['value', 'value2']]
+        cols = [c for c in self.required_keys if c not in ['weight', 'weight2']]
         if (df.shape[0] != df[cols].drop_duplicates().shape[0]):
-            dups = df.groupby(cols,as_index=False)["value"].count()
-            dups = dups[dups["value"]>1][:3]
+            dups = df.groupby(cols,as_index=False)["weight"].count()
+            dups = dups[dups["weight"]>1][:3]
             raise ValueError(f"The dataframe has duplicate edges: first {dups.shape[0]} {dups.values.tolist()}...")
 
-        if pd.api.types.is_string_dtype(df["value"]):
-            df["value"] = df["value"].str.replace(',','')
-            df["value"] = df["value"].str.replace('.','').astype(int)
-        converted = pd.to_numeric(df["value"], errors="coerce")
-        
+        if pd.api.types.is_string_dtype(df["weight"]):
+            df["weight"] = df["weight"].str.replace(',','')
+            df["weight"] = df["weight"].str.replace('.','').astype(int)
+        converted = pd.to_numeric(df["weight"], errors="coerce")
+
         if converted.isna().any():
-            invalid_values = df.loc[converted.isna(), "value"].unique()[:5]
-            raise ValueError(f"Column 'value' contains non-numeric values. Examples: {invalid_values}...")
-        
+            invalid_values = df.loc[converted.isna(), "weight"].unique()[:5]
+            raise ValueError(f"Column 'weight' contains non-numeric values. Examples: {invalid_values}...")
+
         if self.two_values:
-            if pd.api.types.is_string_dtype(df["value2"]):
-                df["value2"] = df["value2"].str.replace(',','')
-                df["value2"] = df["value2"].str.replace('.','').astype(int)
-            converted2 = pd.to_numeric(df["value2"], errors="coerce")
+            if pd.api.types.is_string_dtype(df["weight2"]):
+                df["weight2"] = df["weight2"].str.replace(',','')
+                df["weight2"] = df["weight2"].str.replace('.','').astype(int)
+            converted2 = pd.to_numeric(df["weight2"], errors="coerce")
 
             if converted2.isna().any():
-                invalid_values2 = df.loc[converted2.isna(), "value"].unique()[:5]
-                raise ValueError(f"Column 'value' contains non-numeric values. Examples: {invalid_values2}...")
-    
+                invalid_values2 = df.loc[converted2.isna(), "weight2"].unique()[:5]
+                raise ValueError(f"Column 'weight2' contains non-numeric values. Examples: {invalid_values2}...")
     def _trade_to_network(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Convert a trade dataset into a network format.
@@ -153,7 +152,7 @@ class TerraDataset:
         This method uses self.mode and self.imp_exp to determine how trade flows
         are converted to source–target edges. For import flows, source and target
         are swapped. When mode="both", import and export edges are combined and 
-        aggregated. If two_values=True, both "value" and "value2" are aggregated.
+        aggregated. If two_values=True, both "weight" and "weight2" are aggregated.
 
         Args:
             df (pd.DataFrame): The input trade dataset.
@@ -175,8 +174,8 @@ class TerraDataset:
             df.loc[:, ['source', 'target']] = df[['target', 'source']].values
             df_exp = df[df['flow'] == self.imp_exp[1]][self.required_keys]
             df = pd.concat([df_imp, df_exp], ignore_index=True)
-            cols = [c for c in self.required_keys if c not in ['value', 'flow', 'value2']]
-            df = df.groupby(cols, as_index=False)['value'].mean() if not self.two_values else df.groupby(cols, as_index=False).agg({'value':'mean','value2':'mean'})
+            cols = [c for c in self.required_keys if c not in ['weight', 'flow', 'weight2']]
+            df = df.groupby(cols, as_index=False)['weight'].mean() if not self.two_values else df.groupby(cols, as_index=False).agg({'weight':'mean','weight2':'mean'})
         else:
             raise ValueError("mode must be 'import', 'export' or 'both'.")
         
@@ -185,4 +184,4 @@ class TerraDataset:
         return df
     
     # Required column groups: base columns, flow column, optional second value column
-    _required_cols = [['source', 'target', 'period', 'product', 'value'],['flow'],['value2']]
+    _required_cols = [['source', 'target', 'period', 'product', 'weight'],['flow'],['weight2']]

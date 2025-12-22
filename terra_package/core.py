@@ -35,12 +35,14 @@ def analyze_network(df: TerraDataset) -> pd.DataFrame:
     all_metrics = []
     period = sorted(df['period'].unique())
     for p in period:
-        df_p = df[df['period'] == p]
+        df_p = df[df['period'] == p].copy()
         edge_attr = 'weight' if 'weight' in df_p.columns else None
         G_p = nx.from_pandas_edgelist(df_p, 'source', 'target',
                                         edge_attr=edge_attr, create_using=nx.DiGraph())
         metrics_df = calculate_node_metrics(G_p, p)
+
         all_metrics.append(metrics_df)
+        print(f"Processed period: {p}")
 
     full_metrics_df = pd.concat(all_metrics, ignore_index=True)
     return full_metrics_df
@@ -174,28 +176,28 @@ def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:
         if df.empty:
             raise ValueError(f"No data found for product {product} trade by {country_from}.")
     else:
-        data.groupby(["source","target","product"], as_index=False)[["value", "value2"]].sum()
+        data.groupby(["source","target","product"], as_index=False)[["weight", "weight2"]].sum()
 
     if data[(data.source != country_from) & (data.target == country_to)].empty:
         raise ValueError(f"Simulation not applicable, since there is only {country_from} as supplier for {country_to}.")
     
     df_shock = data[data.target == country_to].copy()
-    df_shock["price"] = df_shock["value"] / df_shock["value2"]
-    df_shock["alpha"] = df_shock["value2"] * df_shock["price"]**(sigma - 1)
+    df_shock["price"] = df_shock["weight"] / df_shock["weight2"]
+    df_shock["alpha"] = df_shock["weight2"] * df_shock["price"]**(sigma - 1)
     df_shock["alpha"] = df_shock["alpha"] / df_shock["alpha"].sum()
 
-    Q_tot = df_shock["value2"].sum()
-    df_shock["weight"] = df_shock["alpha"] * df_shock["price"]**(1 - sigma)
-    df_shock["share_base"] = df_shock["weight"] / df_shock["weight"].sum()
+    Q_tot = df_shock["weight2"].sum()
+    df_shock["weight3"] = df_shock["alpha"] * df_shock["price"]**(1 - sigma)
+    df_shock["share_base"] = df_shock["weight3"] / df_shock["weight3"].sum()
     P = (df_shock["alpha"] * df_shock["price"]**(1 - sigma)).sum()**(1 / (1 - sigma))
     E = P * Q_tot
     df_shock["q_base"] = df_shock["share_base"] * E / df_shock["price"]
     
     df_shock.loc[df_shock.source == country_from, "alpha"] = 0
 
-    df_shock["weight"] = df_shock["alpha"] * df_shock["price"]**(1 - sigma)
-    if df_shock["weight"].sum() != 0:
-        df_shock["share_post"] = df_shock["weight"] / df_shock["weight"].sum()
+    df_shock["weight3"] = df_shock["alpha"] * df_shock["price"]**(1 - sigma)
+    if df_shock["weight3"].sum() != 0:
+        df_shock["share_post"] = df_shock["weight3"] / df_shock["weight3"].sum()
     else:
         df_shock["share_post"] = 0
 
@@ -204,5 +206,5 @@ def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:
     # Add a check to avoid division by zero if Prezzo is zero
     df_shock["q_new"] = df_shock.apply(lambda row: row["share_post"] * E_new / row["price"] if row["price"] != 0 else 0, axis=1)
     df_shock["q_delta"] = df_shock["q_new"] - df_shock["q_base"]
-    df.simulation = df_shock[["source", "target", "period", "product", "value", "value2", "price", "alpha", "share_base", "share_post", "q_base", "q_new", "q_delta"]]
+    df.simulation = df_shock[["source", "target", "period", "product", "weight", "weight2", "price", "alpha", "share_base", "share_post", "q_base", "q_new", "q_delta"]]
     return df

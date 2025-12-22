@@ -63,7 +63,7 @@ def calculate_node_metrics(G: nx.Graph, period: str) -> pd.DataFrame:
     
     total_weight = sum(d.get("weight", 0) for _, _, d in G.edges(data=True))
     for _, _, d in G.edges(data=True):
-        d["weight"] = (d.get("weight", 0) / total_weight)
+        d["weight"] = (d.get("weight", 0) / total_weight) if total_weight > 0 else 0
     
     deg = dict(G.degree(weight="weight"))
     out_deg = dict(G.out_degree(weight="weight")) if G.is_directed() else {n: None for n in G.nodes()}
