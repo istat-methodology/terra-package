@@ -17,6 +17,7 @@ pip install -e .
 Python >= 3.8 <br />
 pandas >= 1.0 <br />
 networkx >= 2.0
+distinctiveness>=0.1.5
 
 ## Usage
 The `terra-package` provides three main functionalities: a function for **network** analysis, a function for **basket time series** analysis and a function for **simulation**.
@@ -42,7 +43,7 @@ The user can use the optional cols_map parameter to reference the column names i
 ```python
 cols_map = {
     "source": "reporterISO",
-    "target": "partner",
+    "target": "partnerISO",
     "period": "period",
     "product": "cmdCode",
     "weight": "primaryValue"
@@ -51,17 +52,18 @@ cols_map = {
 terra_ds = TerraDataset(url, cols_map = cols_map)
 ```
 
-As with Comext data, trading datasets often consist of individual countries' import and export data. Therefore, data must be harmonized to achieve a network structure. To do this, the trade_to_network=True parameter can be used to process it, requiring the presence of the flow column (which can also be referenced with the cols_map parameter). Along with this parameter, you can also specify the data processing method: mode=import considers only the import data, mode=export considers only the export data, and mode=both considers both data, calculating the average weight in the event of duplication between trades. Finally, the imp_exp parameter allows the user to specify how to select the import and export data, respectively.
+As with Comext or Comtrade data, trading datasets often consist of individual countries' import and export data. Therefore, data must be harmonized to achieve a network structure. To do this, the trade_to_network=True parameter can be used to process it, requiring the presence of the flow column (which can also be referenced with the cols_map parameter). Along with this parameter, you can also specify the data processing method: mode=import considers only the import data, mode=export considers only the export data, and mode=both considers both data, calculating the average weight in the event of duplication between trades. Finally, the imp_exp parameter allows the user to specify how to select the import and export data, respectively.
 Here are some examples:
 
 ```python
-cols_map = {
-    "source": "declarant",
-    "target": "partner",
+col_map = {
+    "source": "reporterISO",
+    "target": "partnerISO",
     "period": "period",
-    "product": "product",
-    "weight": "value",
-    "flow": "direction"
+    "product": "cmdCode",
+    "qty": "qty",
+    "flow": "flowDesc",
+    "value": "primaryValue"
 }
 
 # Reading URL, with specified column mapping, of trading type, with 'both' mode in which the import and export values ​​in the flow column are selectable with the values ​​'Import' and 'Export'
@@ -102,6 +104,7 @@ Below is an example of its use:
 
 ```python
 from terra_package.core import analyze_network, analyze_basket
+terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=col_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
 analyze_network(terra_ds)
 ```
 
@@ -111,19 +114,19 @@ Below some example:
 
 ```python
 # time series of the exportation raw data for country A, on all products and on all trades
-analyze_basket(terra_ds, country="A")
+analyze_basket(terra_ds, country="CAN")
 
 # time series of the exportationraw data for country A and country B, on all products
-analyze_basket(terra_ds, country="A", partner="B")
+analyze_basket(terra_ds, country="CAN", partner="LTU")
 
 # time series of the exportationraw data for country B and country D, on product x
-analyze_basket(terra_ds, country="B", partner="D", product="x")
+analyze_basket(terra_ds, country="CAN", partner="LTU", product="TOTAL")
 
 # time series of the exportation percentage change for country E, on all products and on all trades
-analyze_basket(terra_ds, country="E", var=True)
+analyze_basket(terra_ds, country="CAN", var=True)
 
 # time series of the importation raw data for country E, on all products and on all trades
-analyze_basket(terra_ds, country="F", direction="I", var=False)
+analyze_basket(terra_ds, country="CAN", direction="I", var=False)
 ```
 
 ### Simulation
@@ -162,12 +165,7 @@ from terra_package.core import simulate_shock
 terra_ds = TerraDataset(url)
 
 # Shock: remove country A as supplier to country B in period "2020M01"
-simulated = simulate_shock(
-    df=terra_ds,
-    country_from="A",
-    country_to="B",
-    period="2020M01"
-)
+simulated = simulate_shock(terra_ds, country_from="ROU",country_to="ESP", period=202501)
 
 simulated.simulation
 ```
