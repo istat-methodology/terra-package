@@ -18,7 +18,7 @@ def calculate_node_metrics(G: nx.Graph, period: str) -> pd.DataFrame:
     G : networkx.Graph or networkx.DiGraph
         The trade network for a given period. If directed, both in-degree and
         out-degree are computed; otherwise these values are set to ``None``.
-        The graph may contain a ``weight`` attribute on edges, which is
+        The graph may contain a ``qty`` attribute on edges, which is
         normalized internally.
     period : str
         Period associated with the graph. This value is included in the
@@ -60,10 +60,10 @@ def calculate_node_metrics(G: nx.Graph, period: str) -> pd.DataFrame:
         zero when normalizing). This should be handled upstream by validating
         the dataset.
     """
-    
-    total_weight = sum(d.get("weight", 0) for _, _, d in G.edges(data=True))
+
+    total_weight = sum(d.get("qty", 0) for _, _, d in G.edges(data=True))
     for _, _, d in G.edges(data=True):
-        d["weight"] = (d.get("weight", 0) / total_weight) if total_weight > 0 else 0
+        d["weight"] = (d.get("qty", 0) / total_weight) if total_weight > 0 else 0
     
     deg = dict(G.degree(weight="weight"))
     out_deg = dict(G.out_degree(weight="weight")) if G.is_directed() else {n: None for n in G.nodes()}
@@ -76,7 +76,7 @@ def calculate_node_metrics(G: nx.Graph, period: str) -> pd.DataFrame:
         else:
             vulnerability[k] = 0
     
-    inv_w = {(u, v): 1/d["weight"] if d.get("weight", 0) > 0 else 1e9
+    inv_w = {(u, v): 1/d["weight"] if d.get("weight", 0) > 0 else 1e9999
                 for u, v, d in G.edges(data=True)}
     nx.set_edge_attributes(G, inv_w, "inv_weight")
     clos = nx.closeness_centrality(G, distance="inv_weight")
