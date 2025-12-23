@@ -1,4 +1,4 @@
-![Logo](assets/logo-2.png)
+<img src="assets/logo-2.png" width="50%" alt="Logo">
 # Terra-package
 
 A Python package for performing network analysis, time series aggregation and Constant Elasticity of Substitution (CES) simulation on trade dataframes. The package calculates network metrics for each node and returns a new dataframe with the results.
