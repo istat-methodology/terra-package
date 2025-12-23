@@ -1,3 +1,4 @@
+![Logo](assets/logo-2.png)
 # Terra-package
 
 A Python package for performing network analysis, time series aggregation and Constant Elasticity of Substitution (CES) simulation on trade dataframes. The package calculates network metrics for each node and returns a new dataframe with the results.
@@ -16,7 +17,7 @@ pip install -e .
 ## Requirements
 Python >= 3.8 <br />
 pandas >= 1.0 <br />
-networkx >= 2.0
+networkx >= 2.0 <br />
 distinctiveness>=0.1.5
 
 ## Usage
