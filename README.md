@@ -22,6 +22,8 @@ distinctiveness>=0.1.5
 ## Usage
 The `terra-package` provides three main functionalities: a function for **network** analysis, a function for **basket time series** analysis and a function for **simulation**.
 
+The repository also includes an [`examples/`](/home/mauro/projects/terra-package/examples) folder with Jupyter notebooks showing API-based analytical workflows and reusable helper code for working with TERRA data programmatically.
+
 ### Read dataset
 The first step is to read a CSV file that meets minimum requirements and has certain characteristics.If the minimum requirements are not met, a series of errors are displayed to the user, with instructions on how to resolve them. Only if the error is successful can the subsequent metric calculation functions be used.
 The user is given the option to upload a dataset that has the characteristics of a network, with at least the following columns:

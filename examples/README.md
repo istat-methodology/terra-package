@@ -17,15 +17,15 @@ programmatically using the official APIs, with a focus on reproducibility and tr
 ├── terra_modules/
 │   └── terra_api.py
 |
-├── terra_graph_advanced_analysis.ipynb
-├── terra_time_series_advanced_analysis.ipynb
+├── graph_analysis_api.ipynb
+├── time_series_analysis_api.ipynb
 │
 └── README.md
 ```
 
 ## Notebooks
 
-### 1. `terra_graph_advanced_analysis.ipynb`
+### 1. `graph_analysis_api.ipynb`
 
 This notebook shows how to perform advanced analyses on **trade network graphs**
 retrieved via the TERRA Graph API.
@@ -42,7 +42,7 @@ In particular, it illustrates:
 The notebook is fully parameterised and can be easily adapted to different
 datasets, frequencies, indicators, and subsets of countries.
 
-### 2. `terra_time_series_advanced_analysis.ipynb`
+### 2. `time_series_analysis_api.ipynb`
 
 This notebook focuses on time series data retrieved via the TERRA Time Series API.
 
