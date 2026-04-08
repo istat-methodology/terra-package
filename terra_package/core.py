@@ -119,7 +119,7 @@ def analyze_basket(df: TerraDataset, country: str, partner:str = None, product: 
         df["qty"] = (df["qty"]-df["qty_lag"])/df["qty_lag"]
     return df[['period', 'qty']]
 
-def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:str, product: str = None, sigma: int = 5) -> TerraDataset:
+def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:str, product: str = None, sigma: int = 5, eta: float = 1.5) -> TerraDataset:
     """
     Simulates a trade shock in which a supplier country (`country_from`) is removed 
     from the set of exporters to a target importing country (`country_to`). 
@@ -139,7 +139,14 @@ def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:
     product : str, optional
         Product to filter for. If None, the function aggregates over products.
     sigma : int, optional
-        Elasticity of substitution in the CES demand system. Default is 5.
+        Elasticity of substitution across supplier countries in the CES demand system.
+        It determines how easily imports can be reallocated across suppliers in response 
+        to relative price changes. Higher values imply greater substitutability between 
+        suppliers. Default is 5.
+    eta : float, optional
+        Price elasticity of total import demand. Governs how total expenditure 
+        adjusts in response to changes in the CES price index. Higher values 
+        imply a stronger demand response to price changes. Default is 1.5.
 
     Returns
     -------
@@ -167,44 +174,95 @@ def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:
     
     data = df.data.copy()
     data = data[data["period"] == period]
-    
+
     if data.empty:
         raise ValueError(f"Period {period} is not present in the dataset.")
-    
+
+    # product filter
     if product:
         data = data[data["product"] == product]
-        if df.empty:
-            raise ValueError(f"No data found for product {product} trade by {country_from}.")
+        if data.empty:
+            raise ValueError(f"No data found for product {product}.")
     else:
-        data.groupby(["source","target","product"], as_index=False)[["qty", "value"]].sum()
+        data = data.groupby(
+            ["source", "target"], as_index=False
+        )[["qty", "value"]].sum()
 
-    if data[(data.source != country_from) & (data.target == country_to)].empty:
-        raise ValueError(f"Simulation not applicable, since there is only {country_from} as supplier for {country_to}.")
-    
+    # subset importer
     df_shock = data[data.target == country_to].copy()
+
+    if df_shock[df_shock.source != country_from].empty:
+        raise ValueError(
+            f"Simulation not applicable: {country_from} is the only supplier."
+        )
+
+    # prices
     df_shock["price"] = df_shock["value"] / df_shock["qty"]
-    df_shock["alpha"] = df_shock["qty"] * df_shock["price"]**(sigma - 1)
+
+    # initial expenditure
+    E = df_shock["value"].sum()
+
+    # 🔹 observed shares
+    df_shock["share_base"] = df_shock["value"] / E
+
+    # 🔹 alpha calibration (CORRECT)
+    df_shock["alpha"] = df_shock["share_base"] / (
+        df_shock["price"] ** (1 - sigma)
+    )
     df_shock["alpha"] = df_shock["alpha"] / df_shock["alpha"].sum()
 
-    Q_tot = df_shock["qty"].sum()
-    df_shock["weight"] = df_shock["alpha"] * df_shock["price"]**(1 - sigma)
-    df_shock["share_base"] = df_shock["weight"] / df_shock["weight"].sum()
-    P = (df_shock["alpha"] * df_shock["price"]**(1 - sigma)).sum()**(1 / (1 - sigma))
-    E = P * Q_tot
+    # 🔹 initial price index
+    P = (df_shock["alpha"] * df_shock["price"] ** (1 - sigma)).sum() ** (
+        1 / (1 - sigma)
+    )
+
+    # 🔹 baseline quantities
     df_shock["q_base"] = df_shock["share_base"] * E / df_shock["price"]
-    
+
+    # =========================
+    # 🔥 SHOCK
+    # =========================
     df_shock.loc[df_shock.source == country_from, "alpha"] = 0
 
-    df_shock["weight"] = df_shock["alpha"] * df_shock["price"]**(1 - sigma)
-    if df_shock["weight"].sum() != 0:
-        df_shock["share_post"] = df_shock["weight"] / df_shock["weight"].sum()
-    else:
-        df_shock["share_post"] = 0
+    if df_shock["alpha"].sum() == 0:
+        raise ValueError("All suppliers removed.")
 
-    P_new = (df_shock["alpha"] * df_shock["price"]**(1 - sigma)).sum()**(1 / (1 - sigma))
-    E_new = P_new * Q_tot
-    # Add a check to avoid division by zero if Prezzo is zero
-    df_shock["q_new"] = df_shock.apply(lambda row: row["share_post"] * E_new / row["price"] if row["price"] != 0 else 0, axis=1)
+    # 🔹 rinormalizzazione alpha
+    df_shock["alpha"] = df_shock["alpha"] / df_shock["alpha"].sum()
+
+    # 🔹 new quotes
+    df_shock["weight"] = df_shock["alpha"] * df_shock["price"] ** (1 - sigma)
+    df_shock["share_post"] = df_shock["weight"] / df_shock["weight"].sum()
+
+    # 🔹 new price index
+    P_new = (df_shock["alpha"] * df_shock["price"] ** (1 - sigma)).sum() ** (
+        1 / (1 - sigma)
+    )
+
+    # 🔥 ELASTIC DEMAND (KEY DIFFERENCE)
+    E_new = E * (P_new / P) ** (1 - eta)
+
+    # 🔹 new quantities
+    df_shock["q_new"] = df_shock.apply(
+        lambda row: (
+            row["share_post"] * E_new / row["price"]
+            if row["price"] != 0 else 0
+        ),
+        axis=1
+    )
+
     df_shock["q_delta"] = df_shock["q_new"] - df_shock["q_base"]
-    df.simulation = df_shock[["source", "target", "period", "product", "qty", "value", "price", "alpha", "share_base", "share_post", "q_base", "q_new", "q_delta"]]
+    df_shock ["period"] = period
+    df_shock ["product"] = product if product else "all"
+
+    df.simulation = df_shock[
+        [
+            "source", "target","period", "product",
+            "qty", "value", "price",
+            "alpha",
+            "share_base", "share_post",
+            "q_base", "q_new", "q_delta"
+        ]
+    ]
+
     return df
