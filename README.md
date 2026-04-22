@@ -102,6 +102,8 @@ The package provides a function for node-level network analysis. The following w
 - Betweenness
 - Distinctiveness
 
+Normalization & synthetic index: beyond the computation of cited network metrics, Out Degree, Betweenness, and Distinctiveness are converted into fixed-base indices (Jan 2021 = 100) to ensure comparability over time; a synthetic index is computed as their arithmetic mean. This provides an example framework to track the evolution of network-based export positioning (values <100 indicate deterioration, >100 improvement)
+
 Below is an example of its use:
 
 ```python
