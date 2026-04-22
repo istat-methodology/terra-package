@@ -124,6 +124,135 @@ def analyze_basket(df: TerraDataset, country: str, partner:str = None, product: 
         df["qty"] = (df["qty"]-df["qty_lag"])/df["qty_lag"]
     return df[['period', 'qty']]
 
+def analyze_series(
+    df: "TerraDataset",
+    country: str,
+    partner: str = None,
+    product: str = None,
+    direction: str = "E",
+    break_date: str = None,
+    plot: bool = False,
+    seasonal: int = 13,
+    period: int = 12,
+    nw_lags: int = 12,
+    figsize: tuple = (14, 12)
+) -> dict:
+    """
+    Analyze a trade time series for a given country, optionally filtering by
+    partner or product. The function aggregates monthly quantity and value,
+    computes implicit prices, 12-period moving averages, and STL trends.
+    If `break_date` is provided, it also estimates a single-break model on
+    each STL trend using Newey-West standard errors. If `plot=True`, it
+    returns a 6-panel figure with raw series, moving averages, and STL trends.
+
+    Parameters
+    ----------
+    df : TerraDataset
+        A validated TerraDataset object.
+    country : str
+        Country used as source (exports) or target (imports), depending on
+        the selected direction.
+    partner : str, optional
+        Partner country to filter by. Default is None.
+    product : str, optional
+        Product code to filter by. Default is None.
+    direction : {'E', 'I'}, optional
+        Trade direction: 'E' for exports (default), 'I' for imports.
+    break_date : str, optional
+        Break date used in the structural model. If None, the break model is
+        not estimated. Default is None.
+    plot : bool, optional
+        If True, produce the 6-panel chart. Default is False.
+    seasonal : int, optional
+        Seasonal smoothing parameter for STL. Default is 13.
+    period : int, optional
+        Frequency used in STL decomposition. Default is 12.
+    nw_lags : int, optional
+        Number of lags used for Newey-West covariance estimation. Default is 12.
+    figsize : tuple, optional
+        Figure size for the chart. Default is (14, 12).
+
+    Returns
+    -------
+    dict
+        A dictionary with:
+        - ``data`` : DataFrame with quantity, value, implicit price, MA(12),
+          and STL trends;
+        - ``results`` : coefficient tables for ``value``, ``qty``,
+          and ``unit_value`` if ``break_date`` is provided, otherwise None;
+        - ``models`` : fitted model objects if ``break_date`` is provided,
+          otherwise None;
+        - ``figure`` : matplotlib Figure if ``plot=True``, otherwise None;
+        - ``axes`` : matplotlib Axes if ``plot=True``, otherwise None.
+
+    Raises
+    ------
+    TypeError
+        If `df` is not an instance of TerraDataset.
+    ValueError
+        If the selected filters return an empty dataset, if required columns are
+        missing, or if the series are not suitable for log-STL analysis.
+    """
+    data = _prepare_series(
+        df=df,
+        country=country,
+        partner=partner,
+        product=product,
+        direction=direction
+    )
+
+    data = _add_ma12(data, cols=["qty", "value", "unit_value"])
+    data = _add_stl_trend(
+        data=data,
+        cols=["qty", "value", "unit_value"],
+        period=period,
+        seasonal=seasonal
+    )
+
+    models = None
+    results = None
+
+    if break_date is not None:
+        models = {}
+        results = {}
+
+        for col in ["value", "qty", "unit_value"]:
+            model, table = _fit_break_model(
+                trend=data[f"{col}_trend"],
+                dates=data["period"],
+                break_date=break_date,
+                nw_lags=nw_lags
+            )
+            models[col] = model
+            results[col] = table
+
+    fig, axes = None, None
+    if plot:
+        plot_break = break_date if break_date is not None else data["period"].iloc[0]
+
+        prefix = f"{country}"
+        if partner is not None:
+            prefix += f"-{partner}"
+        if product is not None:
+            prefix += f" ({product}) — "
+        else:
+            prefix += " — "
+
+        fig, axes = _plot_series_break(
+            data=data,
+            break_date=plot_break,
+            title_prefix=prefix,
+            figsize=figsize
+        )
+
+    return {
+        "data": data,
+        "results": results,
+        "models": models,
+        "figure": fig,
+        "axes": axes
+    }
+
 def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:str, product: str = None, sigma: int = 5, eta: float = 1.5) -> TerraDataset:
     """
     Simulates a trade shock in which a supplier country (`country_from`) is removed 
