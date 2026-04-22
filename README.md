@@ -58,7 +58,7 @@ As with Comext or Comtrade data, trading datasets often consist of individual co
 Here are some examples:
 
 ```python
-col_map = {
+cols_map = {
     "source": "reporterISO",
     "target": "partnerISO",
     "period": "period",
@@ -108,7 +108,7 @@ Below is an example of its use:
 
 ```python
 from terra_package.core import analyze_network, analyze_basket
-terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=col_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
+terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
 analyze_network(terra_ds)
 ```
 
