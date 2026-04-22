@@ -1,9 +1,16 @@
 import pandas as pd
 import networkx as nx
-from .metrics import calculate_node_metrics, add_fixed_base_indices
+from .metrics import (calculate_node_metrics,
+    add_fixed_base_indices,
+    _prepare_series,
+    _add_ma12,
+    _add_stl_trend,
+    _fit_break_model,
+    _plot_series_break,
+)
 from .utils import TerraDataset
 
-def analyze_network(df: TerraDataset, base="202101") -> pd.DataFrame:
+def analyze_network(df: TerraDataset, base_period: str = "202101") -> pd.DataFrame:
     """
     Compute network metrics for each node in a directed trade network across periods.
 
