@@ -146,6 +146,8 @@ Below a usage example:
 
 ```python
 from terra_package.core import analyze_series
+
+url="sample/terra_data.csv"
 terra_ds = TerraDataset(url, cols_map = cols_map, trade_to_network=False, two_values=True)
 
 out = analyze_series(
