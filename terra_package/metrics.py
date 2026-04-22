@@ -1,9 +1,13 @@
 ### NETWORK ANALYSIS
+import numpy as np
 import pandas as pd
 import networkx as nx
 from distinctiveness.dc import distinctiveness
 import io
 from contextlib import redirect_stdout
+import matplotlib.pyplot as plt
+from statsmodels.tsa.seasonal import STL
+import statsmodels.formula.api as smf
 
 def calculate_node_metrics(G: nx.Graph, period: str) -> pd.DataFrame:
     """
@@ -155,13 +159,6 @@ def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=base_perio
     return out
 
 ### TIME SERIES ANALYSIS
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from statsmodels.tsa.seasonal import STL
-import statsmodels.formula.api as smf
-
 def _parse_period(period_series: pd.Series) -> pd.Series:
     """
     Parse 'period' in YYYYMM format into pandas datetime.
