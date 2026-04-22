@@ -1,9 +1,9 @@
 import pandas as pd
 import networkx as nx
-from .metrics import calculate_node_metrics
+from .metrics import calculate_node_metrics, add_fixed_base_indices
 from .utils import TerraDataset
 
-def analyze_network(df: TerraDataset) -> pd.DataFrame:
+def analyze_network(df: TerraDataset, base="202101") -> pd.DataFrame:
     """
     Compute network metrics for each node in a directed trade network across periods.
 
@@ -45,6 +45,11 @@ def analyze_network(df: TerraDataset) -> pd.DataFrame:
         print(f"Processed period: {p}")
 
     full_metrics_df = pd.concat(all_metrics, ignore_index=True)
+    full_metrics_df = add_fixed_base_indices(
+        full_metrics_df,
+        base_period=base_period
+    )
+    
     return full_metrics_df
 
 def analyze_basket(df: TerraDataset, country: str, partner:str = None, product: str = None, var: bool = False, direction: str = "E") -> pd.DataFrame:
