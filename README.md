@@ -139,6 +139,7 @@ This function extends the basket time series functionality by providing a reprod
 - computes 12-month moving averages;
 - estimates STL-based trends;
 - optionally estimates a single-break model with Newey–West standard errors.
+
 This provides an example workflow to analyze export or import dynamics over time, detect structural breaks, and visualize both raw series and smoothed trends.
 
 Below a usage example:
