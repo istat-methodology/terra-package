@@ -1,4 +1,3 @@
-### NETWORK ANALYSIS
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -9,6 +8,7 @@ import matplotlib.pyplot as plt
 from statsmodels.tsa.seasonal import STL
 import statsmodels.formula.api as smf
 
+### NETWORK ANALYSIS
 def calculate_node_metrics(G: nx.Graph, period: str) -> pd.DataFrame:
     """
     Compute a set of node-level network metrics for a given graph.
