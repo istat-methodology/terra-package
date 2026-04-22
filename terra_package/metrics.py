@@ -98,3 +98,57 @@ def calculate_node_metrics(G: nx.Graph, period: str) -> pd.DataFrame:
     })
 
     return df_metrics
+
+def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=base_period) -> pd.DataFrame:
+    """
+    Compute fixed-base index numbers and a synthetic index for selected
+    network metrics.
+    """
+    required_cols = {
+        "Node", "Period", "Out Degree", "Betweenness", "Distinctiveness"
+    }
+    missing_cols = required_cols - set(full_metrics_df.columns)
+    if missing_cols:
+        raise ValueError(
+            f"Missing required columns for index calculation: {sorted(missing_cols)}"
+        )
+
+    out = full_metrics_df.copy()
+
+    metrics_map = {
+        "Out Degree": "out_degree_index",
+        "Betweenness": "betweenness_index",
+        "Distinctiveness": "distinctiveness_index"
+    }
+
+    base_mask = out["Period"].astype(str) == str(base_period)
+
+    if not base_mask.any():
+        raise ValueError(
+            f"Base period {base_period} not found in 'Period' column."
+        )
+
+    base_df = out.loc[
+        base_mask,
+        ["Node", *metrics_map.keys()]
+    ].rename(
+        columns={metric: f"{metric}_base" for metric in metrics_map}
+    )
+
+    out = out.merge(base_df, on="Node", how="left")
+
+    for metric, index_name in metrics_map.items():
+        base_col = f"{metric}_base"
+
+        out[index_name] = (out[metric] / out[base_col]) * 100
+
+        out.loc[
+            out[base_col].isna() | (out[base_col] == 0),
+            index_name
+        ] = pd.NA
+
+    out["synthetic_index"] = out[list(metrics_map.values())].mean(axis=1)
+
+    out = out.drop(columns=[f"{metric}_base" for metric in metrics_map])
+
+    return out
