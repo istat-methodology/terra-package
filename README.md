@@ -133,6 +133,40 @@ analyze_basket(terra_ds, country="CAN", var=True)
 analyze_basket(terra_ds, country="CAN", direction="I", var=False)
 ```
 
+### Time series analysis
+This function extends the basket time series functionality by providing a reproducible framework for the analysis of individual trade flows. Starting from a TerraDataset, the function:
+- builds monthly series of trade value, quantity, and unit value;
+- computes 12-month moving averages;
+- estimates STL-based trends;
+- optionally estimates a single-break model with Newey–West standard errors.
+This provides an example workflow to analyze export or import dynamics over time, detect structural breaks, and visualize both raw series and smoothed trends.
+
+Below a usage example:
+
+```python
+from terra_package.core import analyze_series
+terra_ds = TerraDataset(url, cols_map = cols_map, trade_to_network=False, two_values=True)
+
+out = analyze_series(
+    df=terra_ds,
+    country="IT",
+    partner="USA",
+    product="24",
+    break_date="2025-03",
+    plot=True
+)
+
+# data, MA12 and STL ouput
+df_ts = out["data"]
+
+# model estimation and results
+model = out["models"]["value"]
+
+res_val = out["results"]["value"]
+res_qty = out["results"]["qty"]
+res_price = out["results"]["unit_value"]
+```
+
 ### Simulation
 The package includes a simulation tool to evaluate the impact of a trade shock in which a specific supplier country is removed from the set of exporters to a given target country.
 
