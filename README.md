@@ -102,7 +102,7 @@ The package provides a function for node-level network analysis. The following w
 - Betweenness
 - Distinctiveness
 
-Normalization & synthetic index: when the input dataset contains a time series dimension, fixed-base normalization is performed only if the user explicitly specifies a base period. In this case, selected network metrics are converted into fixed-base indices (e.g. Jan 2021 = 100) to ensure comparability over time. By default, the framework includes three metrics—Out Degree, Betweenness, and Distinctiveness—as a representative example of export positioning; however, these can be customized by the user. A synthetic index is then computed as their arithmetic mean. If no base period is provided, the function returns only the original network metrics. This approach enables tracking the evolution of network-based export positioning, where values <100 indicate deterioration relative to the base period and values >100 indicate improvement.
+Normalization & synthetic index: when the input dataset contains a time series dimension, fixed-base normalization is performed only if the user explicitly specifies a base period. In this case, selected network metrics are converted into fixed-base indices (e.g. Jan 2021 = 100) to ensure comparability over time. By default, the framework includes three metrics—Out Degree, Betweenness, and Distinctiveness—as a representative example of export positioning; however, these can be customized by the user. A synthetic index is then computed as their arithmetic mean, where values <100 indicate deterioration relative to the base period and values >100 indicate improvement. If no base period is provided, the function returns only the original network metrics.
 
 Below is an example of its use:
 
