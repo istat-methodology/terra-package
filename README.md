@@ -102,7 +102,7 @@ The package provides a function for node-level network analysis. The following w
 - Betweenness
 - Distinctiveness
 
-Normalization & synthetic index: when the input dataset contains a time series dimension, the user can specify a base period for normalization. In this case, selected network metrics are converted into fixed-base indices (e.g. Jan 2021 = 100) to ensure comparability over time. By default, the framework includes three metrics—Out Degree, Betweenness, and Distinctiveness—as a representative example of export positioning; however, these can be customized by the user. A synthetic index is then computed as their arithmetic mean. This approach enables tracking the evolution of network-based export positioning, where values <100 indicate deterioration relative to the base period and values >100 indicate improvement.
+Normalization & synthetic index: when the input dataset contains a time series dimension, fixed-base normalization is performed only if the user explicitly specifies a base period. In this case, selected network metrics are converted into fixed-base indices (e.g. Jan 2021 = 100) to ensure comparability over time. By default, the framework includes three metrics—Out Degree, Betweenness, and Distinctiveness—as a representative example of export positioning; however, these can be customized by the user. A synthetic index is then computed as their arithmetic mean. If no base period is provided, the function returns only the original network metrics. This approach enables tracking the evolution of network-based export positioning, where values <100 indicate deterioration relative to the base period and values >100 indicate improvement.
 
 Below is an example of its use:
 
@@ -110,6 +110,9 @@ Below is an example of its use:
 from terra_package.core import analyze_network, analyze_basket
 terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
 analyze_network(terra_ds)
+
+# fixed-base and synthetic index calculation
+analyze_network(terra_ds, base_period='202001')
 ```
 
 ### Basket time series
