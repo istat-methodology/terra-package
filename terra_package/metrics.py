@@ -104,14 +104,19 @@ def calculate_node_metrics(G: nx.Graph, period: str) -> pd.DataFrame:
 
     return df_metrics
 
-def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=base_period) -> pd.DataFrame:
+def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=None) -> pd.DataFrame:
     """
     Compute fixed-base index numbers and a synthetic index for selected
     network metrics.
+    If base_period is None, the input DataFrame is returned unchanged.
     """
+     if base_period is None:
+        return full_metrics_df.copy()
+
     required_cols = {
         "Node", "Period", "Out Degree", "Betweenness", "Distinctiveness"
     }
+
     missing_cols = required_cols - set(full_metrics_df.columns)
     if missing_cols:
         raise ValueError(
@@ -119,6 +124,8 @@ def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=base_perio
         )
 
     out = full_metrics_df.copy()
+    out["Period"] = out["Period"].astype(str)
+    base_period = str(base_period)
 
     metrics_map = {
         "Out Degree": "out_degree_index",
@@ -126,11 +133,12 @@ def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=base_perio
         "Distinctiveness": "distinctiveness_index"
     }
 
-    base_mask = out["Period"].astype(str) == str(base_period)
+    base_mask = out["Period"] == base_period
 
     if not base_mask.any():
         raise ValueError(
-            f"Base period {base_period} not found in 'Period' column."
+            f"Base period {base_period} not found in 'Period' column. "
+            f"Available periods are: {sorted(out['Period'].unique())}"
         )
 
     base_df = out.loc[
@@ -154,7 +162,9 @@ def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=base_perio
 
     out["synthetic_index"] = out[list(metrics_map.values())].mean(axis=1)
 
-    out = out.drop(columns=[f"{metric}_base" for metric in metrics_map])
+    out = out.drop(
+        columns=[f"{metric}_base" for metric in metrics_map]
+    )
 
     return out
 
