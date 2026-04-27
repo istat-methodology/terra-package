@@ -10,7 +10,7 @@ from .metrics import (calculate_node_metrics,
 )
 from .utils import TerraDataset
 
-def analyze_network(df: TerraDataset, base_period: str = "202101") -> pd.DataFrame:
+def analyze_network(df: TerraDataset, base_period=None) -> pd.DataFrame:
     """
     Compute network metrics for each node in a directed trade network across periods.
 
@@ -18,17 +18,25 @@ def analyze_network(df: TerraDataset, base_period: str = "202101") -> pd.DataFra
     NetworkX graph and computes node-level metrics using `calculate_node_metrics`.
     Results from all periods are concatenated into a single DataFrame.
 
+    If `base_period` is provided, the function also computes fixed-base indices
+    for selected metrics and a synthetic index.
+
     Parameters
     ----------
     df : TerraDataset
         A validated TerraDataset object containing at least the
         columns ['source', 'target', 'period', 'product', 'qty'], and optionally 'flow' and 'value'.
+
+    base_period : str or int, optional
+        Period used as the base for fixed-base indices. For example, "202001".
+        If None, only network metrics are computed.
     
     Returns
     -------
     pd.DataFrame
         A DataFrame containing node metrics for each period, as returned
-        by `calculate_node_metrics`.
+        by `calculate_node_metrics`. If `base_period`
+        is specified, fixed-base indices and the synthetic index are also added.
 
     Raises
     ------
