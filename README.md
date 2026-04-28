@@ -1,6 +1,6 @@
 <img src="assets/logo.png" alt="Logo">
 
-A Python package for performing network analysis, time series aggregation and Constant Elasticity of Substitution (CES) simulation on trade dataframes. The package calculates network metrics for each node and returns a new dataframe with the results.
+A Python package for performing network analysis, time series aggregation and analysis and Constant Elasticity of Substitution (CES) simulation on trade dataframes.
 
 ---
 
@@ -20,7 +20,11 @@ networkx >= 2.0 <br />
 distinctiveness>=0.1.5
 
 ## Usage
-The `terra-package` provides three main functionalities: a function for **network** analysis, a function for **basket time series** analysis and a function for **simulation**.
+The `terra-package` provides four main functionalities: 
+- **network** analysis, 
+- **basket time series** analysis
+- **statistical time series** analysis
+- **CES shock simulation**.
 
 The repository also includes an [`examples/`](/home/mauro/projects/terra-package/examples) folder with Jupyter notebooks showing API-based analytical workflows and reusable helper code for working with TERRA data programmatically.
 
@@ -41,18 +45,6 @@ terra_ds = TerraDataset(url)
 ```
 
 The user can use the optional cols_map parameter to reference the column names in case they have different names.
-
-```python
-cols_map = {
-    "source": "reporterISO",
-    "target": "partnerISO",
-    "period": "period",
-    "product": "cmdCode",
-    "weight": "primaryValue"
-}
-
-terra_ds = TerraDataset(url, cols_map = cols_map)
-```
 
 As with Comext or Comtrade data, trading datasets often consist of individual countries' import and export data. Therefore, data must be harmonized to achieve a network structure. To do this, the trade_to_network=True parameter can be used to process it, requiring the presence of the flow column (which can also be referenced with the cols_map parameter). Along with this parameter, you can also specify the data processing method: mode=import considers only the import data, mode=export considers only the export data, and mode=both considers both data, calculating the average weight in the event of duplication between trades. Finally, the imp_exp parameter allows the user to specify how to select the import and export data, respectively.
 Here are some examples:
