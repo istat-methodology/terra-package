@@ -107,7 +107,8 @@ Normalization & synthetic index: when the input dataset contains a time series d
 Below is an example of its use:
 
 ```python
-from terra_package.core import analyze_network, analyze_basket
+from terra_package.core import analyze_network
+url="sample/com_trade_sample.csv"
 terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
 analyze_network(terra_ds)
 
@@ -122,6 +123,10 @@ With this package, it is possible to create time series starting from trade data
 Below some example:
 
 ```python
+from terra_package.core import analyze_basket
+url="sample/com_trade_sample.csv"
+terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
+
 # time series of the exportation raw data for country A, on all products and on all trades
 analyze_basket(terra_ds, country="CAN")
 
