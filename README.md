@@ -37,19 +37,13 @@ The user is given the option to upload a dataset that has the characteristics of
 - product
 - weight
 
+The user can use the optional cols_map parameter to reference the column names in case they have different names.
+
 ```python
 from terra_package.utils import TerraDataset
 
 url="sample/com_trade_sample.csv"
-terra_ds = TerraDataset(url)
-```
 
-The user can use the optional cols_map parameter to reference the column names in case they have different names.
-
-As with Comext or Comtrade data, trading datasets often consist of individual countries' import and export data. Therefore, data must be harmonized to achieve a network structure. To do this, the trade_to_network=True parameter can be used to process it, requiring the presence of the flow column (which can also be referenced with the cols_map parameter). Along with this parameter, you can also specify the data processing method: mode=import considers only the import data, mode=export considers only the export data, and mode=both considers both data, calculating the average weight in the event of duplication between trades. Finally, the imp_exp parameter allows the user to specify how to select the import and export data, respectively.
-Here are some examples:
-
-```python
 cols_map = {
     "source": "reporterISO",
     "target": "partnerISO",
@@ -60,6 +54,11 @@ cols_map = {
     "value": "primaryValue"
 }
 
+```
+As with Comext or Comtrade data, trading datasets often consist of individual countries' import and export data. Therefore, data must be harmonized to achieve a network structure. To do this, the trade_to_network=True parameter can be used to process it, requiring the presence of the flow column (which can also be referenced with the cols_map parameter). Along with this parameter, you can also specify the data processing method: mode=import considers only the import data, mode=export considers only the export data, and mode=both considers both data, calculating the average weight in the event of duplication between trades. Finally, the imp_exp parameter allows the user to specify how to select the import and export data, respectively.
+Here are some examples:
+
+```python
 # Reading URL, with specified column mapping, of trading type, with 'both' mode in which the import and export values ​​in the flow column are selectable with the values ​​'Import' and 'Export'
 terra_ds = TerraDataset(url, cols_map = cols_map, trade_to_network=True, mode="both", imp_exp=["Import","Export"])
 
