@@ -110,7 +110,7 @@ def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=None) -> p
     network metrics.
     If base_period is None, the input DataFrame is returned unchanged.
     """
-     if base_period is None:
+    if base_period is None:
         return full_metrics_df.copy()
 
     required_cols = {

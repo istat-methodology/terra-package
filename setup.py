@@ -11,6 +11,8 @@ setup(
         'pandas>=1.0',
         'networkx>=2.0',
         'distinctiveness>=0.1.5',
+        'statsmodels',
+        'matplotlib',
     ],
     python_requires='>=3.8',
     classifiers=[

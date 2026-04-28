@@ -275,13 +275,10 @@ def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:
     The function computes how import shares and quantities adjust under a CES 
     demand system after the shock.
     The function computes three types of output quantities:
-
     1. CES model-driven quantities:
        internal quantities consistent with the CES model structure.
-
     2. Scale-adjusted quantities:
        CES quantities mapped back to the observed quantity scale.
-
     3. Constant aggregate quantity scenario:
        observed total import quantity is preserved and the removed
        supplier's flow is redistributed across remaining suppliers.
