@@ -274,7 +274,18 @@ def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:
     from the set of exporters to a target importing country (`country_to`). 
     The function computes how import shares and quantities adjust under a CES 
     demand system after the shock.
+    The function computes three types of output quantities:
 
+    1. CES model-driven quantities:
+       internal quantities consistent with the CES model structure.
+
+    2. Scale-adjusted quantities:
+       CES quantities mapped back to the observed quantity scale.
+
+    3. Constant aggregate quantity scenario:
+       observed total import quantity is preserved and the removed
+       supplier's flow is redistributed across remaining suppliers.
+       
     Parameters
     ----------
     df : TerraDataset
@@ -305,8 +316,13 @@ def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:
         - price
         - alpha (CES preference weights)
         - share_base, share_post (pre- and post-shock import shares)
-        - q_base, q_new (quantities before and after the shock)
+        CES MODEL-DRIVEN QUANTITIES
+        - q_base, q_new (quantities before and after the shock) 
         - q_delta (change in quantities)
+        SCALE-ADJUSTED QUANTITIES
+        - qty_new_scale_adjusted, qty_delta_scale_adjusted 
+        CONSTANT AGGREGATE QUANTITY SCENARIO
+        - qty_new_constant_total, qty_delta_constant_total
 
     Raises
     ------
@@ -391,6 +407,9 @@ def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:
     # 🔥 ELASTIC DEMAND (KEY DIFFERENCE)
     E_new = E * (P_new / P) ** (1 - eta)
 
+    # =====================================================
+    # 1) CES MODEL-DRIVEN QUANTITIES
+    # =====================================================
     # 🔹 new quantities
     df_shock["q_new"] = df_shock.apply(
         lambda row: (
@@ -401,16 +420,86 @@ def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:
     )
 
     df_shock["q_delta"] = df_shock["q_new"] - df_shock["q_base"]
-    df_shock ["period"] = period
-    df_shock ["product"] = product if product else "all"
 
+    # =====================================================
+    # 2) SCALE-ADJUSTED QUANTITIES
+    # =====================================================
+    
+    df_shock["scale_factor_qty"] = df_shock.apply(
+        lambda row: (
+            row["qty"] / row["q_base"]
+            if row["q_base"] != 0 else 0
+        ),
+        axis=1
+    )
+    
+    df_shock["qty_new_scale_adjusted"] = (
+        df_shock["q_new"] * df_shock["scale_factor_qty"]
+    )
+    
+    df_shock["qty_delta_scale_adjusted"] = (
+        df_shock["qty_new_scale_adjusted"] - df_shock["qty"]
+    )
+    
+    # =====================================================
+    # 3) CONSTANT AGGREGATE QUANTITY SCENARIO
+    # =====================================================
+    
+    removed_qty = df_shock.loc[
+        df_shock["source"] == country_from,
+        "qty"
+    ].sum()
+    
+    df_shock["qty_redistributed_from_removed"] = (
+        df_shock["share_post"] * removed_qty
+    )
+    
+    df_shock["qty_new_constant_total"] = df_shock.apply(
+        lambda row: (
+            0
+            if row["source"] == country_from
+            else row["qty"] + row["qty_redistributed_from_removed"]
+        ),
+        axis=1
+    )
+    
+    df_shock["qty_delta_constant_total"] = (
+        df_shock["qty_new_constant_total"] - df_shock["qty"]
+    )
+    
+    # =====================================================
+    # METADATA
+    # =====================================================
+    
+    df_shock["period"] = str(period)
+    df_shock["product"] = str(product) if product else "all"
+    
+    # =====================================================
+    # FINAL OUTPUT
+    # =====================================================
+    
     df.simulation = df_shock[
         [
-            "source", "target","period", "product",
+            "source", "target", "period", "product",
             "qty", "value", "price",
+    
             "alpha",
             "share_base", "share_post",
-            "q_base", "q_new", "q_delta"
+    
+            # 1) CES quantities (original names)
+            "q_base",
+            "q_new",
+            "q_delta",
+    
+            # 2) Scale-adjusted
+            "scale_factor_qty",
+            "qty_new_scale_adjusted",
+            "qty_delta_scale_adjusted",
+    
+            # 3) Constant total quantity
+            "qty_redistributed_from_removed",
+            "qty_new_constant_total",
+            "qty_delta_constant_total"
         ]
     ]
 
