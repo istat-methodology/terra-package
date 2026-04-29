@@ -107,7 +107,7 @@ analyze_network(terra_ds)
 
 # fixed-base and synthetic index calculation
 url="sample/com_trade_months.csv"
-terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
+terra_ds = TerraDataset(url, sep=",", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
 analyze_network(terra_ds, base_period='202001')
 ```
 
