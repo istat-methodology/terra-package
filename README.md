@@ -85,6 +85,8 @@ terra_ds = TerraDataset(url, encoding="utf8", cols_map=cols_map, trade_to_networ
 terra_ds = TerraDataset(url, sep="\t", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"])
 ```
 
+Note: the following examples assume the working directory is set to the root of the cloned repository (i.e., the terra-package/ folder). If running from a different directory, adjust the url path accordingly.
+
 ### Network analysis
 The package provides a function for node-level network analysis. The following weighted centrality metrics are calculated:
 - Degree
