@@ -42,7 +42,7 @@ The user can use the optional cols_map parameter to reference the column names i
 ```python
 from terra_package.utils import TerraDataset
 
-url="sample/com_trade_sample.csv"
+path="sample/com_trade_sample.csv"
 
 cols_map = {
     "source": "reporterISO",
@@ -59,28 +59,28 @@ As with Comext or Comtrade data, trading datasets often consist of individual co
 Here are some examples:
 
 ```python
-# Reading URL, with specified column mapping, of trading type, with 'both' mode in which the import and export values ​​in the flow column are selectable with the values ​​'Import' and 'Export'
-terra_ds = TerraDataset(url, cols_map = cols_map, trade_to_network=True, mode="both", imp_exp=["Import","Export"])
+# Reading path, with specified column mapping, of trading type, with 'both' mode in which the import and export values ​​in the flow column are selectable with the values ​​'Import' and 'Export'
+terra_ds = TerraDataset(path, cols_map = cols_map, trade_to_network=True, mode="both", imp_exp=["Import","Export"])
 
-# Reading URL, with no specified column mapping, of trading type, only 'import' data in which the import and export values ​​in the flow column are selectable with the default values ​('I' and 'E')
-terra_ds = TerraDataset(url, trade_to_network=True, mode="import")
+# Reading path, with no specified column mapping, of trading type, only 'import' data in which the import and export values ​​in the flow column are selectable with the default values ​('I' and 'E')
+terra_ds = TerraDataset(path, trade_to_network=True, mode="import")
 
-# Reading URL, with specified column mapping, of trading type, only export data in which the export values ​​in the flow column are selectable with the default values ​('E')
-terra_ds = TerraDataset(url, cols_map = cols_map, trade_to_network=True, mode="export")
+# Reading path, with specified column mapping, of trading type, only export data in which the export values ​​in the flow column are selectable with the default values ​('E')
+terra_ds = TerraDataset(path, cols_map = cols_map, trade_to_network=True, mode="export")
 ```
 
 Finally, some technical utility functions allow you to read different CSV structures: the user is given the option to specify the column separator and data encoding.
 Below are some examples:
 
 ```python
-# Reading URL, with no specified column mapping, of network-ready data type (default), with semi-colon separator and 'latin-1' enconding
-terra_ds = TerraDataset(url, sep=";", encoding="latin1")
+# Reading path, with no specified column mapping, of network-ready data type (default), with semi-colon separator and 'latin-1' enconding
+terra_ds = TerraDataset(path, sep=";", encoding="latin1")
 
-# Reading URL, with no specified column mapping, of network-ready data type (default), with comma separator (default) and 'utf8' enconding
-terra_ds = TerraDataset(url, encoding="utf8")
+# Reading path, with no specified column mapping, of network-ready data type (default), with comma separator (default) and 'utf8' enconding
+terra_ds = TerraDataset(path, encoding="utf8")
 
-# Reading URL, with no specified column mapping, of network-ready data type (default), with tabular separator and 'utf8' enconding (default)
-terra_ds = TerraDataset(url, sep="\t")
+# Reading path, with no specified column mapping, of network-ready data type (default), with tabular separator and 'utf8' enconding (default)
+terra_ds = TerraDataset(path, sep="\t")
 ```
 
 ### Network analysis
@@ -99,13 +99,13 @@ Below is an example of its use:
 
 ```python
 from terra_package.core import analyze_network
-url="sample/com_trade_sample.csv"
-terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
+path="sample/com_trade_sample.csv"
+terra_ds = TerraDataset(path, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
 analyze_network(terra_ds)
 
 # fixed-base and synthetic index calculation
-url="sample/com_trade_months.csv"
-terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
+path="sample/com_trade_months.csv"
+terra_ds = TerraDataset(path, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
 analyze_network(terra_ds, base_period='202001')
 ```
 
@@ -115,8 +115,8 @@ Below some example:
 
 ```python
 from terra_package.core import analyze_basket
-url="sample/com_trade_sample.csv"
-terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
+path="sample/com_trade_sample.csv"
+terra_ds = TerraDataset(path, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
 
 # time series of the exportation raw data for country A, on all products and on all trades
 analyze_basket(terra_ds, country="CAN")
@@ -148,8 +148,8 @@ Below a usage example:
 ```python
 from terra_package.core import analyze_series
 
-url="sample/terra_data.csv"
-terra_ds = TerraDataset(url, cols_map = cols_map, trade_to_network=False, two_values=True)
+path="sample/terra_data.csv"
+terra_ds = TerraDataset(path, cols_map = cols_map, trade_to_network=False, two_values=True)
 
 out = analyze_series(
     df=terra_ds,
@@ -204,8 +204,8 @@ Here an example:
 ```python
 from terra_package.core import simulate_shock
 
-url="sample/com_trade_sample.csv"
-terra_ds = TerraDataset(url)
+path="sample/com_trade_sample.csv"
+terra_ds = TerraDataset(path)
 
 # Shock: remove country A as supplier to country B in period "2020M01"
 simulated = simulate_shock(terra_ds, country_from="ROU",country_to="ESP", period=202501)
