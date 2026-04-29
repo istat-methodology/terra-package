@@ -37,19 +37,13 @@ The user is given the option to upload a dataset that has the characteristics of
 - product
 - weight
 
+The user can use the optional cols_map parameter to reference the column names in case they have different names.
+
 ```python
 from terra_package.utils import TerraDataset
 
 url="sample/com_trade_sample.csv"
-terra_ds = TerraDataset(url)
-```
 
-The user can use the optional cols_map parameter to reference the column names in case they have different names.
-
-As with Comext or Comtrade data, trading datasets often consist of individual countries' import and export data. Therefore, data must be harmonized to achieve a network structure. To do this, the trade_to_network=True parameter can be used to process it, requiring the presence of the flow column (which can also be referenced with the cols_map parameter). Along with this parameter, you can also specify the data processing method: mode=import considers only the import data, mode=export considers only the export data, and mode=both considers both data, calculating the average weight in the event of duplication between trades. Finally, the imp_exp parameter allows the user to specify how to select the import and export data, respectively.
-Here are some examples:
-
-```python
 cols_map = {
     "source": "reporterISO",
     "target": "partnerISO",
@@ -60,28 +54,35 @@ cols_map = {
     "value": "primaryValue"
 }
 
+```
+As with Comext or Comtrade data, trading datasets often consist of individual countries' import and export data. Therefore, data must be harmonized to achieve a network structure. To do this, the trade_to_network=True parameter can be used to process it, requiring the presence of the flow column (which can also be referenced with the cols_map parameter). Along with this parameter, you can also specify the data processing method: mode=import considers only the import data, mode=export considers only the export data, and mode=both considers both data, calculating the average weight in the event of duplication between trades. Finally, the imp_exp parameter allows the user to specify how to select the import and export data, respectively.
+Here are some examples:
+
+```python
 # Reading URL, with specified column mapping, of trading type, with 'both' mode in which the import and export values ​​in the flow column are selectable with the values ​​'Import' and 'Export'
 terra_ds = TerraDataset(url, sep=";", cols_map = cols_map, trade_to_network=True, mode="both", imp_exp=["Import","Export"])
 
-# Reading URL, with no specified column mapping, of trading type, only 'import' data in which the import and export values ​​in the flow column are selectable with the default values ​('I' and 'E')
-terra_ds = TerraDataset(url, trade_to_network=True, mode="import")
+# Reading URL, with specified column mapping, of trading type, only 'import' data in which the import and export values
+# in the flow column are selectable with the values 'Import' and 'Export'
+terra_ds = TerraDataset(url, sep=";", cols_map=cols_map, trade_to_network=True, mode="import", imp_exp=["Import","Export"])
 
-# Reading URL, with specified column mapping, of trading type, only export data in which the export values ​​in the flow column are selectable with the default values ​('E')
-terra_ds = TerraDataset(url, cols_map = cols_map, trade_to_network=True, mode="export")
+# Reading URL, with specified column mapping, of trading type, only export data in which the export values
+# in the flow column are selectable with the values 'Import' and 'Export'
+terra_ds = TerraDataset(url, sep=";", cols_map = cols_map, trade_to_network=True, mode="export", imp_exp=["Import","Export"])
 ```
 
 Finally, some technical utility functions allow you to read different CSV structures: the user is given the option to specify the column separator and data encoding.
 Below are some examples:
 
 ```python
-# Reading URL, with no specified column mapping, of network-ready data type (default), with semi-colon separator and 'latin-1' enconding
-terra_ds = TerraDataset(url, sep=";", encoding="latin1")
+# Reading a network-ready CSV with semi-colon separator and 'latin-1' encoding
+terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"])
 
-# Reading URL, with no specified column mapping, of network-ready data type (default), with comma separator (default) and 'utf8' enconding
-terra_ds = TerraDataset(url, encoding="utf8")
+# Reading a network-ready CSV with comma separator (default) and 'utf8' encoding
+terra_ds = TerraDataset(url, encoding="utf8", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"])
 
-# Reading URL, with no specified column mapping, of network-ready data type (default), with tabular separator and 'utf8' enconding (default)
-terra_ds = TerraDataset(url, sep="\t")
+# Reading a network-ready CSV with tabular separator and 'utf8' encoding (default)
+terra_ds = TerraDataset(url, sep="\t", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"])
 ```
 
 ### Network analysis
@@ -106,7 +107,7 @@ analyze_network(terra_ds)
 
 # fixed-base and synthetic index calculation
 url="sample/com_trade_months.csv"
-terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
+terra_ds = TerraDataset(url, sep=",", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
 analyze_network(terra_ds, base_period='202001')
 ```
 
@@ -205,6 +206,7 @@ Here an example:
 ```python
 from terra_package.core import simulate_shock
 
+url="sample/com_trade_sample.csv"
 terra_ds = TerraDataset(url)
 
 # Shock: remove country A as supplier to country B in period "2020M01"
