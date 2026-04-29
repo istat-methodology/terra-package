@@ -59,28 +59,30 @@ As with Comext or Comtrade data, trading datasets often consist of individual co
 Here are some examples:
 
 ```python
-# Reading url, with specified column mapping, of trading type, with 'both' mode in which the import and export values ​​in the flow column are selectable with the values ​​'Import' and 'Export'
-terra_ds = TerraDataset(url, cols_map = cols_map, trade_to_network=True, mode="both", imp_exp=["Import","Export"])
+# Reading URL, with specified column mapping, of trading type, with 'both' mode in which the import and export values ​​in the flow column are selectable with the values ​​'Import' and 'Export'
+terra_ds = TerraDataset(url, sep=";", cols_map = cols_map, trade_to_network=True, mode="both", imp_exp=["Import","Export"])
 
-# Reading url, with no specified column mapping, of trading type, only 'import' data in which the import and export values ​​in the flow column are selectable with the default values ​('I' and 'E')
-terra_ds = TerraDataset(url, trade_to_network=True, mode="import")
+# Reading URL, with specified column mapping, of trading type, only 'import' data in which the import and export values
+# in the flow column are selectable with the values 'Import' and 'Export'
+terra_ds = TerraDataset(url, sep=";", cols_map=cols_map, trade_to_network=True, mode="import", imp_exp=["Import","Export"])
 
-# Reading url, with specified column mapping, of trading type, only export data in which the export values ​​in the flow column are selectable with the default values ​('E')
-terra_ds = TerraDataset(url, cols_map = cols_map, trade_to_network=True, mode="export")
+# Reading URL, with specified column mapping, of trading type, only export data in which the export values
+# in the flow column are selectable with the values 'Import' and 'Export'
+terra_ds = TerraDataset(url, sep=";", cols_map = cols_map, trade_to_network=True, mode="export", imp_exp=["Import","Export"])
 ```
 
 Finally, some technical utility functions allow you to read different CSV structures: the user is given the option to specify the column separator and data encoding.
 Below are some examples:
 
 ```python
-# Reading url, with no specified column mapping, of network-ready data type (default), with semi-colon separator and 'latin-1' enconding
-terra_ds = TerraDataset(url, sep=";", encoding="latin1")
+# Reading a network-ready CSV with semi-colon separator and 'latin-1' encoding
+terra_ds = TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"])
 
-# Reading url, with no specified column mapping, of network-ready data type (default), with comma separator (default) and 'utf8' enconding
-terra_ds = TerraDataset(url, encoding="utf8")
+# Reading a network-ready CSV with comma separator (default) and 'utf8' encoding
+terra_ds = TerraDataset(url, encoding="utf8", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"])
 
-# Reading url, with no specified column mapping, of network-ready data type (default), with tabular separator and 'utf8' enconding (default)
-terra_ds = TerraDataset(url, sep="\t")
+# Reading a network-ready CSV with tabular separator and 'utf8' encoding (default)
+terra_ds = TerraDataset(url, sep="\t", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"])
 ```
 
 ### Network analysis
