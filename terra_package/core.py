@@ -144,7 +144,6 @@ def analyze_series(
     country: str,
     partner: str = None,
     product: str = None,
-    direction: str = "E",
     break_date: str = None,
     plot: bool = False,
     seasonal: int = 13,
