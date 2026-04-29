@@ -61,7 +61,7 @@ cols_map = {
 }
 
 # Reading URL, with specified column mapping, of trading type, with 'both' mode in which the import and export values ​​in the flow column are selectable with the values ​​'Import' and 'Export'
-terra_ds = TerraDataset(url, cols_map = cols_map, trade_to_network=True, mode="both", imp_exp=["Import","Export"])
+terra_ds = TerraDataset(url, sep=";", cols_map = cols_map, trade_to_network=True, mode="both", imp_exp=["Import","Export"])
 
 # Reading URL, with no specified column mapping, of trading type, only 'import' data in which the import and export values ​​in the flow column are selectable with the default values ​('I' and 'E')
 terra_ds = TerraDataset(url, trade_to_network=True, mode="import")
