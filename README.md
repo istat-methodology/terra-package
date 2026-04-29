@@ -149,15 +149,23 @@ Below a usage example:
 
 ```python
 from terra_package.core import analyze_series
+url="terra-package/sample/terra_data.csv"
+cols_map = {
+    "source": "reporterISO",
+    "target": "partnerISO",
+    "period": "period",
+    "product": "cmdCode",
+    "qty": "qty",
+    "flow": "flowDesc",
+    "value": "primaryValue"
+}
 
-url="sample/terra_data.csv"
-terra_ds = TerraDataset(url, cols_map = cols_map, trade_to_network=False, two_values=True)
-
+terra_ds = TerraDataset(url, sep=",", encoding="latin1", cols_map=cols_map, trade_to_network=False, imp_exp=["Import","Export"], two_values=True)
 out = analyze_series(
     df=terra_ds,
     country="IT",
     partner="USA",
-    product="24",
+    product=24,
     break_date="2025-03",
     plot=True
 )
