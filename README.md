@@ -217,7 +217,7 @@ Here an example:
 from terra_package.core import simulate_shock
 
 url="sample/com_trade_sample.csv"
-terra_ds =  TerraDataset(url, sep=";", encoding="latin1", cols_map=cols_map, trade_to_network=True, imp_exp=["Import","Export"], two_values=True)
+terra_ds = TerraDataset(url)
 
 # Shock: remove country A as supplier to country B in period "2020M01"
 simulated = simulate_shock(terra_ds, country_from="ROU",country_to="ESP", period=202501)
