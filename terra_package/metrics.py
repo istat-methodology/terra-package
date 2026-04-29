@@ -7,6 +7,7 @@ from contextlib import redirect_stdout
 import matplotlib.pyplot as plt
 from statsmodels.tsa.seasonal import STL
 import statsmodels.formula.api as smf
+from .utils import TerraDataset
 
 ### NETWORK ANALYSIS
 def calculate_node_metrics(G: nx.Graph, period: str) -> pd.DataFrame:
