@@ -7,6 +7,7 @@ from contextlib import redirect_stdout
 import matplotlib.pyplot as plt
 from statsmodels.tsa.seasonal import STL
 import statsmodels.formula.api as smf
+from .utils import TerraDataset
 
 ### NETWORK ANALYSIS
 def calculate_node_metrics(G: nx.Graph, period: str) -> pd.DataFrame:
@@ -250,6 +251,66 @@ def _prepare_series(
         .reset_index(drop=True)
     )
 
+def _prepare_time_series_dataset(
+    df,
+    country: str = None,
+    partner: str = None,
+    product: str = None,
+    direction: str = "E",
+    flow=None,
+) -> tuple[pd.DataFrame, list[str]]:
+    """
+    Prepare an already-aggregated TimeSeriesDataset for analysis.
+    """
+    data = df.data.copy()
+
+    filters = {
+        "country": country,
+        "partner": partner,
+        "product": product,
+        "flow": flow,
+    }
+    for col, value in filters.items():
+        if value is not None and col in data.columns:
+            data = data[data[col].astype(str) == str(value)]
+
+    numeric_cols = [
+        col for col in ["value", "qty", "unit_value", "series"]
+        if col in data.columns
+    ]
+    if not numeric_cols:
+        raise ValueError(
+            "TimeSeriesDataset requires at least one numeric series column "
+            "such as 'series', 'value', 'qty' or 'unit_value'."
+        )
+
+    metadata_cols = [
+        col for col in ["country", "partner", "product", "flow", "data_type", "tipovar"]
+        if col in data.columns
+    ]
+    series_keys = [
+        col for col in metadata_cols
+        if data[col].nunique(dropna=False) > 1
+    ]
+    if series_keys:
+        examples = data[series_keys].drop_duplicates().head(5).to_dict("records")
+        raise ValueError(
+            "TimeSeriesDataset contains multiple series after filtering. "
+            "Filter by country, partner, product or flow before analysis. "
+            f"Examples: {examples}."
+        )
+
+    if data.empty:
+        raise ValueError("No aggregated time-series observations are available after filtering.")
+
+    out = data[["date", *numeric_cols]].rename(columns={"date": "period"}).copy()
+    out = out.sort_values("period").reset_index(drop=True)
+    out = out.dropna(subset=numeric_cols)
+    if out.empty:
+        raise ValueError("No numeric time-series observations are available after filtering.")
+
+    return out, numeric_cols
+
 def _add_ma12(data: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
     """
     Add 12-period moving averages to selected columns.
@@ -382,6 +443,52 @@ def _plot_series_break(
     ]
 
     for i, (col, label, ylab) in enumerate(specs):
+        axes[i, 0].plot(data["period"], data[col], label="Raw", alpha=0.7)
+        axes[i, 0].plot(data["period"], data[f"{col}_ma12"], label="MA(12)")
+        axes[i, 0].axvline(break_date, linestyle="--")
+        axes[i, 0].set_title(f"{title_prefix}{label} (raw + MA12)")
+        axes[i, 0].set_ylabel(ylab)
+        axes[i, 0].legend()
+        axes[i, 0].grid(True, alpha=0.3)
+
+        axes[i, 1].plot(data["period"], data[f"{col}_trend"])
+        axes[i, 1].axvline(break_date, linestyle="--")
+        axes[i, 1].set_title(f"{title_prefix}{label} trend (log-STL)")
+        axes[i, 1].set_ylabel("Trend")
+        axes[i, 1].grid(True, alpha=0.3)
+
+    axes[-1, 0].set_xlabel("Year")
+    axes[-1, 1].set_xlabel("Year")
+
+    return fig, axes
+
+
+def _plot_generic_series_break(
+    data: pd.DataFrame,
+    cols: list[str],
+    break_date,
+    title_prefix: str = "",
+    figsize: tuple = (14, 12),
+):
+    """
+    Plot raw series, MA(12), and STL trends for arbitrary series columns.
+    """
+    break_date = pd.to_datetime(break_date)
+
+    fig, axes = plt.subplots(len(cols), 2, figsize=figsize, sharex=True)
+    if len(cols) == 1:
+        axes = np.array([axes])
+    fig.subplots_adjust(hspace=0.35, wspace=0.20)
+
+    labels = {
+        "value": ("Values", "Euro"),
+        "qty": ("Quantity", "Kg"),
+        "unit_value": ("Implicit price", "Euro/Kg"),
+        "series": ("Series", "Value"),
+    }
+
+    for i, col in enumerate(cols):
+        label, ylab = labels.get(col, (col, "Value"))
         axes[i, 0].plot(data["period"], data[col], label="Raw", alpha=0.7)
         axes[i, 0].plot(data["period"], data[f"{col}_ma12"], label="MA(12)")
         axes[i, 0].axvline(break_date, linestyle="--")

@@ -3,20 +3,30 @@ import networkx as nx
 from .metrics import (calculate_node_metrics,
     add_fixed_base_indices,
     _prepare_series,
+    _prepare_time_series_dataset,
     _add_ma12,
     _add_stl_trend,
     _fit_break_model,
     _plot_series_break,
+    _plot_generic_series_break,
 )
 from .utils import TerraDataset
+from .network_metrics import NetworkMetricsDataset
+from .time_series import TimeSeriesDataset
 
-def analyze_network(df: TerraDataset, base_period=None) -> pd.DataFrame:
+def analyze_network(df, base_period=None, verbose: bool = False) -> pd.DataFrame:
     """
-    Compute network metrics for each node in a directed trade network across periods.
+    Compute or reuse network metrics for each node across periods.
 
-    The function converts each period of the input TerraDataset into a directed
-    NetworkX graph and computes node-level metrics using `calculate_node_metrics`.
-    Results from all periods are concatenated into a single DataFrame.
+    The function supports two input categories:
+
+    1. A ``TerraDataset`` containing trade microdata or network-ready trade
+       edges. In this path, each period is converted into a directed NetworkX
+       graph and node-level metrics are computed with
+       ``calculate_node_metrics``.
+    2. A ``NetworkMetricsDataset`` containing already-calculated network
+       metrics loaded from the TERRA Graph API or from a metrics CSV. In this
+       path, network construction and metric computation are skipped.
 
     If `base_period` is provided, the function also computes fixed-base indices
     for selected metrics and a synthetic index.
@@ -24,12 +34,17 @@ def analyze_network(df: TerraDataset, base_period=None) -> pd.DataFrame:
     Parameters
     ----------
     df : TerraDataset
-        A validated TerraDataset object containing at least the
-        columns ['source', 'target', 'period', 'product', 'qty'], and optionally 'flow' and 'value'.
+        A validated TerraDataset object containing at least the columns
+        ['source', 'target', 'period', 'product', 'qty'], and optionally
+        'flow' and 'value'. Alternatively, a NetworkMetricsDataset containing
+        precomputed columns such as 'Node', 'Period', 'Out Degree',
+        'Betweenness' and 'Distinctiveness'.
 
     base_period : str or int, optional
         Period used as the base for fixed-base indices. For example, "202001".
         If None, only network metrics are computed.
+    verbose : bool, default False
+        If True, print progress messages while processing periods.
     
     Returns
     -------
@@ -41,11 +56,25 @@ def analyze_network(df: TerraDataset, base_period=None) -> pd.DataFrame:
     Raises
     ------
     TypeError
-        If `df` is not an instance of TerraDataset.
+        If `df` is not an instance of TerraDataset or NetworkMetricsDataset.
     """
+    if isinstance(df, TimeSeriesDataset):
+        raise TypeError(
+            "analyze_network() requires trade microdata or precomputed network "
+            "metrics. Use TerraDataset or NetworkMetricsDataset, not TimeSeriesDataset."
+        )
+
+    if isinstance(df, NetworkMetricsDataset):
+        return add_fixed_base_indices(
+            df.data,
+            base_period=base_period
+        )
+
     if not isinstance(df, TerraDataset):
-        raise TypeError("This function only accepts TerraDataset.")
-    
+        raise TypeError(
+            "This function only accepts TerraDataset or NetworkMetricsDataset."
+        )
+
     df = df.data
     all_metrics = []
     period = sorted(df['period'].unique())
@@ -57,7 +86,8 @@ def analyze_network(df: TerraDataset, base_period=None) -> pd.DataFrame:
         metrics_df = calculate_node_metrics(G_p, p)
 
         all_metrics.append(metrics_df)
-        print(f"Processed period: {p}")
+        if verbose:
+            print(f"Processed period: {p}")
 
     full_metrics_df = pd.concat(all_metrics, ignore_index=True)
     full_metrics_df = add_fixed_base_indices(
@@ -110,6 +140,11 @@ def analyze_basket(df: TerraDataset, country: str, partner:str = None, product: 
     ValueError
         If the selected filters return an empty dataset.
     """
+    if isinstance(df, TimeSeriesDataset):
+        raise TypeError(
+            "analyze_basket() requires trade microdata. Use TerraDataset, not TimeSeriesDataset."
+        )
+
     if not isinstance(df, TerraDataset):
         raise TypeError("This function only accepts TerraDataset.")
     
@@ -140,11 +175,12 @@ def analyze_basket(df: TerraDataset, country: str, partner:str = None, product: 
     return df[['period', 'qty']]
 
 def analyze_series(
-    df: "TerraDataset",
-    country: str,
+    df,
+    country: str = None,
     partner: str = None,
     product: str = None,
     direction: str = "E",
+    flow=None,
     break_date: str = None,
     plot: bool = False,
     seasonal: int = 13,
@@ -153,17 +189,25 @@ def analyze_series(
     figsize: tuple = (14, 12)
 ) -> dict:
     """
-    Analyze a trade time series for a given country, optionally filtering by
-    partner or product. The function aggregates monthly quantity and value,
-    computes implicit prices, 12-period moving averages, and STL trends.
+    Analyze a monthly trade time series.
+
+    The function accepts either a ``TerraDataset`` containing trade microdata
+    or a ``TimeSeriesDataset`` containing already-aggregated time-series data.
+    For ``TerraDataset`` input, it preserves the backward-compatible behavior:
+    filter by country, partner, product and direction, aggregate monthly
+    quantity and value, compute implicit prices, moving averages and STL
+    trends. For ``TimeSeriesDataset`` input, it uses the available numeric
+    series columns directly. Use ``country``, ``partner``, ``product`` and
+    ``flow`` to select one series when the dataset contains multiple series.
+
     If `break_date` is provided, it also estimates a single-break model on
-    each STL trend using Newey-West standard errors. If `plot=True`, it
-    returns a 6-panel figure with raw series, moving averages, and STL trends.
+    each STL trend using Newey-West standard errors. If `plot=True`, it returns
+    raw series, moving averages and STL trends.
 
     Parameters
     ----------
-    df : TerraDataset
-        A validated TerraDataset object.
+    df : TerraDataset or TimeSeriesDataset
+        Trade microdata or already-aggregated time-series data.
     country : str
         Country used as source (exports) or target (imports), depending on
         the selected direction.
@@ -172,12 +216,18 @@ def analyze_series(
     product : str, optional
         Product code to filter by. Default is None.
     direction : {'E', 'I'}, optional
-        Trade direction: 'E' for exports (default), 'I' for imports.
+        Trade direction for ``TerraDataset`` input: 'E' for exports (default),
+        'I' for imports.
+    flow : optional
+        Flow selector for ``TimeSeriesDataset`` input. This is useful for
+        API-style values such as ``1`` for imports and ``2`` for exports.
     break_date : str, optional
         Break date used in the structural model. If None, the break model is
         not estimated. Default is None.
     plot : bool, optional
-        If True, produce the 6-panel chart. Default is False.
+        If True, produce the chart. ``TerraDataset`` input produces the
+        original quantity/value/unit-value panels. ``TimeSeriesDataset`` input
+        produces panels for the available numeric series columns.
     seasonal : int, optional
         Seasonal smoothing parameter for STL. Default is 13.
     period : int, optional
@@ -191,10 +241,13 @@ def analyze_series(
     -------
     dict
         A dictionary with:
-        - ``data`` : DataFrame with quantity, value, implicit price, MA(12),
-          and STL trends;
-        - ``results`` : coefficient tables for ``value``, ``qty``,
-          and ``unit_value`` if ``break_date`` is provided, otherwise None;
+        - ``data`` : DataFrame with the analyzed series columns, MA(12),
+          and STL trends. For ``TerraDataset`` these are ``qty``, ``value``
+          and ``unit_value``; for ``TimeSeriesDataset`` they are the available
+          numeric columns such as ``series``, ``value``, ``qty`` or
+          ``unit_value``;
+        - ``results`` : coefficient tables for analyzed columns if
+          ``break_date`` is provided, otherwise None;
         - ``models`` : fitted model objects if ``break_date`` is provided,
           otherwise None;
         - ``figure`` : matplotlib Figure if ``plot=True``, otherwise None;
@@ -203,23 +256,43 @@ def analyze_series(
     Raises
     ------
     TypeError
-        If `df` is not an instance of TerraDataset.
+        If `df` is not an instance of TerraDataset or TimeSeriesDataset.
     ValueError
         If the selected filters return an empty dataset, if required columns are
         missing, or if the series are not suitable for log-STL analysis.
     """
-    data = _prepare_series(
-        df=df,
-        country=country,
-        partner=partner,
-        product=product,
-        direction=direction
-    )
+    if isinstance(df, NetworkMetricsDataset):
+        raise TypeError(
+            "analyze_series() requires trade microdata or aggregated time-series "
+            "data. Precomputed network metrics cannot be used for time-series "
+            "analysis; use TerraDataset or TimeSeriesDataset."
+        )
 
-    data = _add_ma12(data, cols=["qty", "value", "unit_value"])
+    if isinstance(df, TimeSeriesDataset):
+        data, analysis_cols = _prepare_time_series_dataset(
+            df=df,
+            country=country,
+            partner=partner,
+            product=product,
+            direction=direction,
+            flow=flow,
+        )
+    else:
+        if country is None:
+            raise ValueError("analyze_series() requires country when df is a TerraDataset.")
+        data = _prepare_series(
+            df=df,
+            country=country,
+            partner=partner,
+            product=product,
+            direction=direction
+        )
+        analysis_cols = ["qty", "value", "unit_value"]
+
+    data = _add_ma12(data, cols=analysis_cols)
     data = _add_stl_trend(
         data=data,
-        cols=["qty", "value", "unit_value"],
+        cols=analysis_cols,
         period=period,
         seasonal=seasonal
     )
@@ -231,7 +304,7 @@ def analyze_series(
         models = {}
         results = {}
 
-        for col in ["value", "qty", "unit_value"]:
+        for col in analysis_cols:
             model, table = _fit_break_model(
                 trend=data[f"{col}_trend"],
                 dates=data["period"],
@@ -253,12 +326,21 @@ def analyze_series(
         else:
             prefix += " — "
 
-        fig, axes = _plot_series_break(
-            data=data,
-            break_date=plot_break,
-            title_prefix=prefix,
-            figsize=figsize
-        )
+        if analysis_cols == ["qty", "value", "unit_value"]:
+            fig, axes = _plot_series_break(
+                data=data,
+                break_date=plot_break,
+                title_prefix=prefix,
+                figsize=figsize
+            )
+        else:
+            fig, axes = _plot_generic_series_break(
+                data=data,
+                cols=analysis_cols,
+                break_date=plot_break,
+                title_prefix=prefix,
+                figsize=figsize
+            )
 
     return {
         "data": data,
@@ -330,6 +412,17 @@ def simulate_shock(df: TerraDataset, country_from: str, country_to: str, period:
         If filtering by product results in an empty dataset.
         If the shock is not applicable (i.e., the shocked country is the sole supplier).
     """
+
+    if isinstance(df, NetworkMetricsDataset):
+        raise TypeError(
+            "simulate_shock() requires trade microdata. Precomputed network "
+            "metrics cannot be used for CES simulation; use TerraDataset."
+        )
+
+    if isinstance(df, TimeSeriesDataset):
+        raise TypeError(
+            "simulate_shock() requires trade microdata. Use TerraDataset, not TimeSeriesDataset."
+        )
 
     if not isinstance(df, TerraDataset):
         raise TypeError("This function only accepts TerraDataset.")
