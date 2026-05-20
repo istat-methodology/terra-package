@@ -61,6 +61,10 @@ builds a trade network and computes node metrics. With `NetworkMetricsDataset`,
 it uses precomputed metrics directly. When `base_period` is provided, it also
 computes fixed-base indices.
 
+Network metrics are usually interpreted using trade value as the edge weight.
+Quantity-based weights can also be used when the objective is to analyze
+physical flows.
+
 ```python
 from terra_package import NetworkMetricsDataset, analyze_network
 
@@ -88,8 +92,9 @@ metrics = analyze_network(metrics_ds, base_period="202505")
 
 ### `analyze_basket()`
 
-Requires `TerraDataset`. It aggregates trade quantities over time for a
-selected country, optionally filtered by partner, product and direction.
+Requires `TerraDataset`. It aggregates one selected trade measure over time.
+The selected measure can be quantity (`qty`) or value (`value`), depending on
+the available columns and the analytical objective.
 
 ```python
 from terra_package import TerraDataset, analyze_basket
@@ -101,7 +106,7 @@ trade_ds = TerraDataset.from_api_microdata(
     partner="ES",
     product="00",
     flow=1,
-    criterion=2,
+    criterion=1,
 )
 
 basket = analyze_basket(
@@ -110,6 +115,7 @@ basket = analyze_basket(
     partner="ES",
     product="00",
     direction="E",
+    measure="value",
 )
 ```
 
@@ -145,34 +151,25 @@ Requires `TerraDataset` with quantity and value data. It runs on one selected
 period and simulates removal of one supplier using CES redistribution.
 
 ```python
+import pandas as pd
+
 from terra_package import TerraDataset, load_trade_microdata_from_api, simulate_shock
 
-qty_ds = TerraDataset.from_api_microdata(
-    product_class="cpa",
+trade_df = load_trade_microdata_from_api(
+    product_class="nstr",
     period="202505",
     country="IT",
     partner=None,
-    product="00",
+    product="011",
     flow=1,
-    criterion=2,
+    criterion=0,
+    transport=[1],
 )
-
-value_df = load_trade_microdata_from_api(
-    product_class="cpa",
-    period="202505",
-    country="IT",
-    partner=None,
-    product="00",
-    flow=1,
-    criterion=1,
-    cols_map={"qty": "VALUE_IN_EUROS", "value": []},
-).rename(columns={"qty": "value"})
-
-trade_df = qty_ds.data.merge(
-    value_df[["source", "target", "period", "product", "flow", "value"]],
-    on=["source", "target", "period", "product", "flow"],
+trade_df = (
+    trade_df.groupby(["source", "target", "period", "product", "flow"], as_index=False)
+    .agg({"qty": "sum", "value": "sum"})
 )
-trade_df = trade_df[(trade_df["qty"] > 0) & (trade_df["value"] > 0)]
+trade_df = trade_df[(trade_df["qty"] > 0) & (trade_df["value"] > 0)].copy()
 
 trade_ds = TerraDataset.from_dataframe(
     trade_df,
@@ -184,10 +181,10 @@ trade_ds = TerraDataset.from_dataframe(
 
 simulated = simulate_shock(
     trade_ds,
-    country_from="ES",
+    country_from="CA",
     country_to="IT",
     period="202505",
-    product="00",
+    product="011",
     sigma=2,
 )
 

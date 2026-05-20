@@ -24,7 +24,8 @@ Critical rules:
 ## Trade Microdata
 
 Trade microdata are raw trade-flow observations. Typical normalized columns are
-`source`, `target`, `period`, `product`, `qty`, `value` and `flow`.
+`source`, `target`, `period`, `product`, `flow` and one or both analytical
+measure columns: `qty` and `value`.
 
 Trade microdata can come from:
 
@@ -49,14 +50,15 @@ Use `TerraDataset.from_api_microdata()`:
 from terra_package import TerraDataset
 
 trade_ds = TerraDataset.from_api_microdata(
-    product_class="cpa",
+    product_class="nstr",
     period="202505",
     country="IT",
     flow=1,
-    criterion=2,
-    partner="ES",
-    product="00",
-    transport=None,
+    criterion=0,
+    partner="AL",
+    product="011",
+    transport=[1],
+    two_values=True,
 )
 ```
 
@@ -75,10 +77,49 @@ Optional parameters:
 - `transport`: if omitted, `None` or `[]`, requests all transport types when
   supported by the endpoint.
 
-The live endpoint returns one criterion per request: `criterion=1` returns
-value fields such as `VALUE_IN_EUROS`, while `criterion=2` returns quantity
-fields such as `QUANTITY_IN_KG`. Use data with both quantity and value when a
-workflow, such as `simulate_shock()`, needs CES prices.
+Criterion controls which measures are requested from the API:
+
+- `criterion=0`: may return both value and quantity, as `VALUE_IN_EUROS` and
+  `QUANTITY_IN_KG`, when both fields are available for the selected payload;
+- `criterion=1`: returns value and can support
+  `analyze_basket(measure="value")`;
+- `criterion=2`: returns quantity and can support
+  `analyze_basket(measure="qty")`.
+
+Users should verify which fields are returned by the selected payload. The
+availability of value and quantity depends on the actual API response fields,
+not only on `product_class`. Use `criterion=0` for workflows that need complete
+microdata because it can provide both normalized columns, `value` and `qty`,
+when both fields are available. `simulate_shock()` requires both quantity and
+value because CES prices are computed as value divided by quantity.
+
+### Basket Measure
+
+`analyze_basket()` aggregates one selected trade measure over time. The
+selected measure can be quantity (`qty`) or value (`value`), depending on the
+available columns and the analytical objective.
+
+```python
+basket_qty = analyze_basket(trade_ds, country="IT", measure="qty")
+basket_value = analyze_basket(trade_ds, country="IT", measure="value")
+```
+
+If the selected measure is missing, `analyze_basket()` raises a clear error.
+For example, a response containing only `VALUE_IN_EUROS` can be used with
+`measure="value"`, while a response containing only `QUANTITY_IN_KG` can be
+used with `measure="qty"`. If both columns are available, choose one measure
+at a time.
+
+### Choosing The Network Weight
+
+Value/euros is the recommended default for general trade-network analysis
+because value-based weights describe economic intensity. Quantity/kg can be
+used for physical-flow, logistics, commodities or homogeneous-product analyses
+because quantity-based weights describe physical intensity.
+
+The chosen weight changes the interpretation of network metrics and
+fixed-base indices. Do not compare value-weighted and quantity-weighted
+networks as if they represented the same concept.
 
 ### Export And Reload Microdata
 

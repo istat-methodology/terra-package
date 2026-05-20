@@ -234,9 +234,9 @@ def normalize_trade_microdata(
     out = out.rename(columns=_build_trade_rename_map(out.columns, cols_map))
     out = _enrich_from_request_context(out, request_context=request_context)
 
-    required = {"source", "target", "period", "product", "qty", "flow"}
-    if require_value or "value" in out.columns:
-        required.add("value")
+    required = {"source", "target", "period", "product", "flow"}
+    if require_value:
+        required.update({"qty", "value"})
 
     missing = required - set(out.columns)
     if missing:
@@ -245,6 +245,12 @@ def normalize_trade_microdata(
             f"{sorted(missing)}. Provide cols_map if the API fields use "
             "different names."
         )
+    if not require_value and not {"qty", "value"}.intersection(out.columns):
+        raise ValueError(
+            "Missing required API trade microdata columns after mapping: "
+            "one of ['qty', 'value'] is required. Provide cols_map if the API "
+            "fields use different names."
+        )
 
     for col in ["source", "target", "product", "flow"]:
         out[col] = out[col].astype(str).str.strip()
@@ -252,7 +258,8 @@ def normalize_trade_microdata(
             raise ValueError(f"Column '{col}' contains empty values.")
 
     out["period"] = _normalize_period(out["period"])
-    out["qty"] = _normalize_numeric(out, "qty")
+    if "qty" in out.columns:
+        out["qty"] = _normalize_numeric(out, "qty")
     if "value" in out.columns:
         out["value"] = _normalize_numeric(out, "value")
 

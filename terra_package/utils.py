@@ -121,7 +121,8 @@ class TerraDataset:
         default. The response is treated as raw trade-flow observations, not as
         precomputed network metrics and not as aggregated time-series data.
         Records are normalized to the package columns ``source``, ``target``,
-        ``period``, ``product``, ``qty``, ``flow`` and optionally ``value``
+        ``period``, ``product``, ``flow`` and at least one of ``qty`` or
+        ``value``
         before normal TerraDataset validation runs. The returned object can be
         used by ``analyze_network()``, ``analyze_basket()`` and
         ``simulate_shock()``.
@@ -255,16 +256,15 @@ class TerraDataset:
         This method validates:
             - presence of required columns
             - absence of duplicate edges
-            - numeric validity of "qty" and, if two_values=True, 
-            also "value"
+            - numeric validity of available "qty" and/or "value" columns
 
         Args:
             df (pd.DataFrame): The dataset to validate.
 
         Raises:
             ValueError: If required columns are missing, if duplicate 
-            edges are found, or if numeric conversion of 'qty' 
-            (or 'value' when applicable) fails.
+            edges are found, or if numeric conversion of available measure
+            columns fails.
         """
         if not set(self.required_keys).issubset(df.columns):
             missing = set(self.required_keys) - set(df.columns)
@@ -272,31 +272,33 @@ class TerraDataset:
                 f"The dataframe must contain columns: {self.required_keys}. "
                 f"Missing: {sorted(missing)}"
             )
+        if self.two_values:
+            missing_measures = {"qty", "value"} - set(df.columns)
+            if missing_measures:
+                raise ValueError(
+                    "The dataframe must contain both 'qty' and 'value' when "
+                    f"two_values=True. Missing: {sorted(missing_measures)}"
+                )
+        elif not {"qty", "value"}.intersection(df.columns):
+            raise ValueError("The dataframe must contain at least one of 'qty' or 'value'.")
 
         df["period"] = self._normalize_period_labels(df["period"])
         cols = [c for c in self.required_keys if c not in ['qty', 'value']]
         if (df.shape[0] != df[cols].drop_duplicates().shape[0]):
-            dups = df.groupby(cols,as_index=False)["qty"].count()
-            dups = dups[dups["qty"]>1][:3]
+            dups = df.groupby(cols, as_index=False).size()
+            dups = dups[dups["size"] > 1][:3]
             raise ValueError(f"The dataframe has duplicate edges: first {dups.shape[0]} {dups.values.tolist()}...")
 
-        if pd.api.types.is_string_dtype(df["qty"]):
-            df["qty"] = df["qty"].str.replace(',','')
-            df["qty"] = df["qty"].str.replace('.','').astype(int)
-        converted = pd.to_numeric(df["qty"], errors="coerce")
-
-        if converted.isna().any():
-            invalid_values = df.loc[converted.isna(), "qty"].unique()[:5]
-            raise ValueError(f"Column 'qty' contains non-numeric values. Examples: {invalid_values}...")
-        if self.two_values:
-            if pd.api.types.is_string_dtype(df["value"]):
-                df["value"] = df["value"].str.replace(',','')
-                df["value"] = df["value"].str.replace('.','').astype(int)
-            converted2 = pd.to_numeric(df["value"], errors="coerce")
-
-            if converted2.isna().any():
-                invalid_values2 = df.loc[converted2.isna(), "value"].unique()[:5]
-                raise ValueError(f"Column 'value' contains non-numeric values. Examples: {invalid_values2}...")
+        for measure in ["qty", "value"]:
+            if measure not in df.columns:
+                continue
+            if pd.api.types.is_string_dtype(df[measure]):
+                df[measure] = df[measure].str.replace(',','')
+                df[measure] = df[measure].str.replace('.','').astype(int)
+            converted = pd.to_numeric(df[measure], errors="coerce")
+            if converted.isna().any():
+                invalid_values = df.loc[converted.isna(), measure].unique()[:5]
+                raise ValueError(f"Column '{measure}' contains non-numeric values. Examples: {invalid_values}...")
 
     @staticmethod
     def _normalize_period_labels(period: pd.Series) -> pd.Series:
@@ -338,18 +340,22 @@ class TerraDataset:
             ValueError: If the mode is invalid or if the resulting dataset
                 is empty.
         """
+        measure_cols = [col for col in ["qty", "value"] if col in df.columns]
+        selected_cols = list(dict.fromkeys(
+            col for col in self.required_keys + measure_cols if col in df.columns
+        ))
         if self.mode == 'import':
-            df = df[df['flow'] == self.imp_exp[0]][self.required_keys]
+            df = df[df['flow'] == self.imp_exp[0]][selected_cols]
             df.loc[:, ['source', 'target']] = df[['target', 'source']].values
         elif self.mode == 'export':
-            df = df[df['flow'] == self.imp_exp[1]][self.required_keys]
+            df = df[df['flow'] == self.imp_exp[1]][selected_cols]
         elif self.mode == 'both':
-            df_imp = df[df['flow'] == self.imp_exp[0]][self.required_keys]
+            df_imp = df[df['flow'] == self.imp_exp[0]][selected_cols]
             df.loc[:, ['source', 'target']] = df[['target', 'source']].values
-            df_exp = df[df['flow'] == self.imp_exp[1]][self.required_keys]
+            df_exp = df[df['flow'] == self.imp_exp[1]][selected_cols]
             df = pd.concat([df_imp, df_exp], ignore_index=True)
             cols = [c for c in self.required_keys if c not in ['qty', 'flow', 'value']]
-            df = df.groupby(cols, as_index=False)['qty'].mean() if not self.two_values else df.groupby(cols, as_index=False).agg({'qty':'mean','value':'mean'})
+            df = df.groupby(cols, as_index=False).agg({col: 'mean' for col in measure_cols})
         else:
             raise ValueError("mode must be 'import', 'export' or 'both'.")
         
@@ -358,4 +364,4 @@ class TerraDataset:
         return df
     
     # Required column groups: base columns, flow column, optional second value column
-    _required_cols = [['source', 'target', 'period', 'product', 'qty'],['flow'],['value']]
+    _required_cols = [['source', 'target', 'period', 'product'],['flow'],['value']]

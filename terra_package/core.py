@@ -97,16 +97,25 @@ def analyze_network(df, base_period=None, verbose: bool = False) -> pd.DataFrame
     
     return full_metrics_df
 
-def analyze_basket(df: TerraDataset, country: str, partner:str = None, product: str = None, var: bool = False, direction: str = "E") -> pd.DataFrame:
+def analyze_basket(
+    df: TerraDataset,
+    country: str,
+    partner: str = None,
+    product: str = None,
+    var: bool = False,
+    direction: str = "E",
+    measure: str = "qty",
+) -> pd.DataFrame:
     """
     Analyze the trade basket of a given country, optionally filtering by partner
-    or product, and compute aggregated trade weights over time.
+    or product, and compute one selected aggregated trade measure over time.
 
     The function extracts flows from a validated TerraDataset, selecting
     the specified country either as exporter ("E") or importer ("I"). It then
     optionally filters by trading partner and/or product. Trade weights are
     aggregated by period. If `var=True`, period-over-period variation is
-    computed instead of absolute values.
+    computed instead of absolute values. The selected measure can be ``qty``
+    or ``value``, depending on the available columns and analytical objective.
 
     Parameters
     ----------
@@ -125,13 +134,17 @@ def analyze_basket(df: TerraDataset, country: str, partner:str = None, product: 
     direction : {'E', 'I'}, optional
         Trade direction: 'E' for exports (default), 'I' for imports. When 'I'
         is selected, source and target are swapped.
+    measure : {'qty', 'value'}, optional
+        Trade measure to aggregate. Default is ``"qty"`` for backward
+        compatibility.
 
     Returns
     -------
     pd.DataFrame
         A DataFrame with:
         - ``period`` : trade period.
-        - ``qty`` : aggregated weight or its relative variation if ``var=True``.
+        - selected measure column: aggregated measure or its relative
+          variation if ``var=True``.
 
     Raises
     ------
@@ -150,8 +163,15 @@ def analyze_basket(df: TerraDataset, country: str, partner:str = None, product: 
     
     if direction not in ["E", "I"]:
         raise ValueError("Direction must be 'E' for exports or 'I' for imports.")
+    if measure not in ["qty", "value"]:
+        raise ValueError("measure must be 'qty' or 'value'.")
     
-    df = df.data
+    df = df.data.copy()
+    if measure not in df.columns:
+        raise ValueError(
+            f"analyze_basket() requires column '{measure}' for measure='{measure}'."
+        )
+
     if direction in ["I"]:
         df.loc[:, ['source', 'target']] = df[['target', 'source']].values
     df = df[df['source'] == country]
@@ -166,13 +186,14 @@ def analyze_basket(df: TerraDataset, country: str, partner:str = None, product: 
     if df.empty:
         raise ValueError(f"Partner {partner} in direction {direction} is not present in the dataset.")
 
-    df = df.groupby(['period'], as_index=False)['qty'].sum()
+    df = df.groupby(['period'], as_index=False)[measure].sum()
 
     if var:
-        df = df.groupby(['period'], as_index=False)["qty"].sum().sort_values(by=['period'], ascending=True)
-        df["qty_lag"] = df["qty"].shift(1)
-        df["qty"] = (df["qty"]-df["qty_lag"])/df["qty_lag"]
-    return df[['period', 'qty']]
+        df = df.groupby(['period'], as_index=False)[measure].sum().sort_values(by=['period'], ascending=True)
+        lag_col = f"{measure}_lag"
+        df[lag_col] = df[measure].shift(1)
+        df[measure] = (df[measure]-df[lag_col])/df[lag_col]
+    return df[['period', measure]]
 
 def analyze_series(
     df,
