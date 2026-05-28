@@ -61,6 +61,11 @@ builds a trade network and computes node metrics. With `NetworkMetricsDataset`,
 it uses precomputed metrics directly. When `base_period` is provided, it also
 computes fixed-base indices.
 
+The individual metric indices keep the usual fixed-base formula
+`metric_raw_t / metric_raw_base * 100`. The `synthetic_index` is computed by
+first averaging the raw Out Degree, Betweenness and Distinctiveness values,
+then converting that raw average into a fixed-base index.
+
 Network metrics are usually interpreted using trade value as the edge weight.
 Quantity-based weights can also be used when the objective is to analyze
 physical flows.

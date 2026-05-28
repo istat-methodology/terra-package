@@ -109,6 +109,8 @@ def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=None) -> p
     """
     Compute fixed-base index numbers and a synthetic index for selected
     network metrics.
+    The synthetic index is computed by first averaging the raw selected
+    metrics, then normalizing that raw average to the selected base period.
     If base_period is None, the input DataFrame is returned unchanged.
     """
     if base_period is None:
@@ -161,10 +163,24 @@ def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=None) -> p
             index_name
         ] = pd.NA
 
-    out["synthetic_index"] = out[list(metrics_map.values())].mean(axis=1)
+    metric_cols = list(metrics_map.keys())
+    base_cols = [f"{metric}_base" for metric in metric_cols]
+    out["_synthetic_raw"] = out[metric_cols].mean(axis=1)
+    out["_synthetic_raw_base"] = out[base_cols].mean(axis=1)
+    out["synthetic_index"] = (
+        out["_synthetic_raw"] / out["_synthetic_raw_base"]
+    ) * 100
+    out.loc[
+        out["_synthetic_raw_base"].isna() | (out["_synthetic_raw_base"] == 0),
+        "synthetic_index"
+    ] = pd.NA
 
     out = out.drop(
-        columns=[f"{metric}_base" for metric in metrics_map]
+        columns=[
+            *base_cols,
+            "_synthetic_raw",
+            "_synthetic_raw_base",
+        ]
     )
 
     return out

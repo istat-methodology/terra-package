@@ -121,6 +121,12 @@ The chosen weight changes the interpretation of network metrics and
 fixed-base indices. Do not compare value-weighted and quantity-weighted
 networks as if they represented the same concept.
 
+When a network `base_period` is supplied, individual metric indices are
+computed from each raw metric relative to its own base value. The
+`synthetic_index` is computed separately: the raw Out Degree, Betweenness and
+Distinctiveness values are averaged first, and that raw average is then
+normalized to the base period.
+
 ### Export And Reload Microdata
 
 ```python
