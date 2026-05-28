@@ -135,6 +135,7 @@ def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=None) -> p
         "Betweenness": "betweenness_index",
         "Distinctiveness": "distinctiveness_index"
     }
+    metric_cols = list(metrics_map.keys())
 
     base_mask = out["Period"] == base_period
 
@@ -144,11 +145,15 @@ def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=None) -> p
             f"Available periods are: {sorted(out['Period'].unique())}"
         )
 
+    out["_synthetic_raw"] = out[metric_cols].mean(axis=1)
     base_df = out.loc[
         base_mask,
-        ["Node", *metrics_map.keys()]
+        ["Node", *metric_cols, "_synthetic_raw"]
     ].rename(
-        columns={metric: f"{metric}_base" for metric in metrics_map}
+        columns={
+            **{metric: f"{metric}_base" for metric in metrics_map},
+            "_synthetic_raw": "_synthetic_raw_base",
+        }
     )
 
     out = out.merge(base_df, on="Node", how="left")
@@ -163,10 +168,7 @@ def add_fixed_base_indices(full_metrics_df: pd.DataFrame, base_period=None) -> p
             index_name
         ] = pd.NA
 
-    metric_cols = list(metrics_map.keys())
     base_cols = [f"{metric}_base" for metric in metric_cols]
-    out["_synthetic_raw"] = out[metric_cols].mean(axis=1)
-    out["_synthetic_raw_base"] = out[base_cols].mean(axis=1)
     out["synthetic_index"] = (
         out["_synthetic_raw"] / out["_synthetic_raw_base"]
     ) * 100
