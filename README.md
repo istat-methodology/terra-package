@@ -11,6 +11,8 @@ TERRA API workflows.
 ```bash
 git clone https://github.com/istat-methodology/terra-package
 cd terra-package
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 pip install -e .
 ```
 
@@ -50,9 +52,10 @@ For TERRA API classification lookup tables, see
 ## Main Analysis Functions
 
 The examples below use TERRA API workflows to highlight the package's
-API-first usage. Local CSV loading is also supported and documented in
-[Data workflows](docs/data_workflows.md). API examples require access to the
-TERRA API.
+API-first usage. Local CSV loading is also supported. The same examples are
+collected in the [README examples notebook](docs/readme_notebook.ipynb).
+
+API examples require access to the TERRA API.
 
 ### `analyze_network()`
 
@@ -93,6 +96,7 @@ metrics_ds = NetworkMetricsDataset.from_api(
 )
 
 metrics = analyze_network(metrics_ds, base_period="202505")
+print(metrics.head())
 ```
 
 ### `analyze_basket()`
@@ -122,6 +126,7 @@ basket = analyze_basket(
     direction="E",
     measure="value",
 )
+print(basket)
 ```
 
 ### `analyze_series()`
@@ -148,6 +153,7 @@ ts_ds = TimeSeriesDataset.from_api(
 )
 
 out = analyze_series(ts_ds, flow=1, break_date="2025-03")
+print(out["data"].head()); print(out["results"]["series"]); analyze_series(ts_ds, flow=1, break_date="2025-03", plot=True)["figure"].show()
 ```
 
 ### `simulate_shock()`
@@ -195,9 +201,3 @@ simulated = simulate_shock(
 
 simulated.simulation
 ```
-
-## Examples
-
-- [Graph API workflow](examples/graph_analysis_api.ipynb)
-- [Aggregated time-series API workflow](examples/time_series_analysis_api.ipynb)
-- [Precomputed network metrics example](examples/precomputed_network_metrics.py)
