@@ -45,7 +45,8 @@ should be treated according to its data type.
 | Precomputed network metrics | `NetworkMetricsDataset` | `analyze_network()` only |
 | Aggregated time series | `TimeSeriesDataset` | `analyze_series()` only |
 
-For detailed loading workflows, see [Data workflows](docs/data_workflows.md).
+For detailed loading workflows, see
+[terra-package Internal Workflow Map](docs/terra_package_internal_workflow_map.md).
 For TERRA API classification lookup tables, see
 [API classifications](docs/api_classifications.md).
 
