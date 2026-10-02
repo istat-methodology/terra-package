@@ -13,6 +13,7 @@ setup(
         'distinctiveness>=0.1.5',
         'statsmodels',
         'matplotlib',
+        'requests',
     ],
     python_requires='>=3.8',
     classifiers=[
