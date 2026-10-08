@@ -13,6 +13,14 @@ open-access article [*Exploring the Complexity of International Trade Networks
 with TERRA*](https://www.cambridge.org/core/journals/world-trade-review/article/exploring-the-complexity-of-international-trade-networks-with-terra/58E2D97F1A1A4179E52C602F9450C4FE),
 published in *World Trade Review* by Cambridge University Press.
 
+## Researcher Quick Links
+
+| Resource | Purpose |
+|---|---|
+| **[Example notebook](notebook/example_notebook.ipynb)** | Run the main TERRA workflows through reproducible examples. |
+| **[Internal Workflow Map](docs/terra_package_internal_workflow_map.md)** | Identify the correct data object, loader and analysis function for each workflow. |
+| **[API Classifications](docs/api_classifications.md)** | Find valid classification values for TERRA API payloads. |
+
 ## Installation
 
 ```bash
@@ -52,16 +60,10 @@ should be treated according to its data type.
 | Precomputed network metrics | `NetworkMetricsDataset` | `analyze_network()` only |
 | Aggregated time series | `TimeSeriesDataset` | `analyze_series()` only |
 
-For detailed loading workflows, see
-[terra-package Internal Workflow Map](docs/terra_package_internal_workflow_map.md).
-For TERRA API classification lookup tables, see
-[API classifications](docs/api_classifications.md).
-
 ## Main Analysis Functions
 
 The examples below use TERRA API workflows to highlight the package's
-API-first usage. Local CSV loading is also supported. The same examples are
-collected in the [example notebook](notebook/example_notebook.ipynb).
+API-first usage. Local CSV loading is also supported.
 
 API examples require access to the TERRA API.
 
