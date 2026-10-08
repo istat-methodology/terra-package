@@ -6,6 +6,13 @@
 trade-network metrics, aggregated time-series tools, CES shock simulation and
 TERRA API workflows.
 
+## Publication
+
+The methodological foundations and applications of TERRA are presented in the
+open-access article [*Exploring the Complexity of International Trade Networks
+with TERRA*](https://www.cambridge.org/core/journals/world-trade-review/article/exploring-the-complexity-of-international-trade-networks-with-terra/58E2D97F1A1A4179E52C602F9450C4FE),
+published in *World Trade Review* by Cambridge University Press.
+
 ## Installation
 
 ```bash
@@ -54,7 +61,7 @@ For TERRA API classification lookup tables, see
 
 The examples below use TERRA API workflows to highlight the package's
 API-first usage. Local CSV loading is also supported. The same examples are
-collected in the [README examples notebook](docs/readme_notebook.ipynb).
+collected in the [example notebook](notebook/example_notebook.ipynb).
 
 API examples require access to the TERRA API.
 

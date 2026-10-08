@@ -1,4 +1,5 @@
 *.ipynb
+!notebook/example_notebook.ipynb
 *.venv
 __pycache__/
 examples/
