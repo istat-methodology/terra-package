@@ -246,5 +246,5 @@ If you use TERRA in your research, please cite:
 ## Contributors
 
 - Federico Brogi
-- Giulio Massacci
 - Mauro Bruno
+- Giulio Massacci
