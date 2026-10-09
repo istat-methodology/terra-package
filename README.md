@@ -1,71 +1,60 @@
 # terra-package
 
-<img src="assets/logo.png" alt="Logo">
+<p align="center">
+  <img src="assets/terra-package-banner.png" alt="terra-package: international trade networks, time series and shock simulation" width="100%">
+</p>
 
-`terra-package` is a Python package for international trade analysis with
-trade-network metrics, aggregated time-series tools, CES shock simulation and
-TERRA API workflows.
+<p align="center"><strong>Python tools for reproducible international trade analysis: networks, time series and CES-based shock simulations.</strong></p>
+<p align="center">Part of the TERRA analytical framework developed at Istat.</p>
 
-## Publication
+<p align="center">
+  <img alt="Python 3.8+" src="https://img.shields.io/badge/Python-%E2%89%A53.8-3776AB?logo=python&logoColor=white">
+  <a href="https://www.cambridge.org/core/journals/world-trade-review/article/exploring-the-complexity-of-international-trade-networks-with-terra/58E2D97F1A1A4179E52C602F9450C4FE"><img alt="Open Access article" src="https://img.shields.io/badge/article-Open%20Access-2DA44E"></a>
+  <a href="https://doi.org/10.1017/S1474745626101591"><img alt="DOI 10.1017/S1474745626101591" src="https://img.shields.io/badge/DOI-10.1017%2FS1474745626101591-0969DA"></a>
+</p>
 
-The methodological foundations and applications of TERRA are presented in the
-open-access article [*Exploring the Complexity of International Trade Networks
-with TERRA*](https://www.cambridge.org/core/journals/world-trade-review/article/exploring-the-complexity-of-international-trade-networks-with-terra/58E2D97F1A1A4179E52C602F9450C4FE),
-published in *World Trade Review* by Cambridge University Press.
+<p align="center">
+  <a href="https://www.cambridge.org/core/journals/world-trade-review/article/exploring-the-complexity-of-international-trade-networks-with-terra/58E2D97F1A1A4179E52C602F9450C4FE"><strong>Research article</strong></a>
+  · <a href="notebook/example_notebook.ipynb"><strong>Example notebook</strong></a>
+  · <a href="docs/terra_package_internal_workflow_map.md"><strong>Workflow map</strong></a>
+  · <a href="docs/api_classifications.md"><strong>API classifications</strong></a>
+</p>
 
-## Researcher Quick Links
+## Overview
 
-| Resource | Purpose |
+`terra-package` is a Python library for reproducible analysis of international
+trade data. It supports trade-network metrics, aggregated time-series analysis,
+basket analysis and CES-based supplier-removal scenarios.
+
+The package is part of the broader TERRA (*imporT ExpoRt netwoRk Analysis*)
+framework developed at Istat and can work with both user-provided data and data
+retrieved through TERRA APIs.
+
+## What You Can Do with `terra-package`
+
+| Capability | Description |
 |---|---|
-| **[Example notebook](notebook/example_notebook.ipynb)** | Run the main TERRA workflows through reproducible examples. |
-| **[Internal Workflow Map](docs/terra_package_internal_workflow_map.md)** | Identify the correct data object, loader and analysis function for each workflow. |
-| **[API Classifications](docs/api_classifications.md)** | Find valid classification values for TERRA API payloads. |
+| **Network analysis** | Build trade networks or analyze precomputed network metrics. |
+| **Time-series analysis** | Analyze moving averages, STL trends and optional structural breaks. |
+| **Basket analysis** | Aggregate a selected quantity or value measure over time. |
+| **Shock simulation** | Explore CES-based supplier-removal and redistribution scenarios. |
 
-## Installation
-
-```bash
-git clone https://github.com/istat-methodology/terra-package
-cd terra-package
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-pip install -e .
-```
-
-## Requirements
-
-- Python >= 3.8
-- pandas >= 1.0
-- networkx >= 2.0
-- distinctiveness >= 0.1.5
-- statsmodels
-- matplotlib
-- requests
-
-## What It Does
-
-- Computes network metrics from trade microdata.
-- Uses precomputed network metrics when available.
-- Analyzes aggregated trade time series.
-- Simulates supplier-removal shocks with a CES model.
-- Provides utilities for TERRA API payload classifications.
-
-## Choose The Right Input Data
+## Choose Your Data Type
 
 API and CSV are loading routes. A TERRA file saved locally and reloaded later
 should be treated according to its data type.
 
-| Data type | Load with | Compatible functions |
+| Your data | Load with | Analyze with |
 |---|---|---|
 | Trade microdata | `TerraDataset` | `analyze_network()`, `analyze_basket()`, `simulate_shock()` |
-| Precomputed network metrics | `NetworkMetricsDataset` | `analyze_network()` only |
-| Aggregated time series | `TimeSeriesDataset` | `analyze_series()` only |
+| Precomputed network metrics | `NetworkMetricsDataset` | `analyze_network()` |
+| Aggregated time series | `TimeSeriesDataset` | `analyze_series()` |
 
-## Main Analysis Functions
+## Usage Examples
 
 The examples below use TERRA API workflows to highlight the package's
-API-first usage. Local CSV loading is also supported.
-
-API examples require access to the TERRA API.
+API-first usage. Local CSV loading is also supported. API examples require
+access to the TERRA API.
 
 ### `analyze_network()`
 
@@ -163,7 +152,11 @@ ts_ds = TimeSeriesDataset.from_api(
 )
 
 out = analyze_series(ts_ds, flow=1, break_date="2025-03")
-print(out["data"].head()); print(out["results"]["series"]); analyze_series(ts_ds, flow=1, break_date="2025-03", plot=True)["figure"].show()
+print(out["data"].head())
+print(out["results"]["series"])
+analyze_series(
+    ts_ds, flow=1, break_date="2025-03", plot=True
+)["figure"].show()
 ```
 
 ### `simulate_shock()`
@@ -211,3 +204,47 @@ simulated = simulate_shock(
 
 simulated.simulation
 ```
+
+## Installation
+
+```bash
+git clone https://github.com/istat-methodology/terra-package
+cd terra-package
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+pip install -e .
+```
+
+**Requirements:** Python ≥ 3.8, pandas ≥ 1.0, networkx ≥ 2.0,
+distinctiveness ≥ 0.1.5, statsmodels, matplotlib and requests.
+
+## Analysis Reference
+
+| Function | Accepted data | Main result |
+|---|---|---|
+| `analyze_network()` | `TerraDataset`, `NetworkMetricsDataset` | Node-level network metrics and optional fixed-base indices |
+| `analyze_basket()` | `TerraDataset` | Aggregated trade measure |
+| `analyze_series()` | `TimeSeriesDataset` | Moving averages, STL trends and an optional break model |
+| `simulate_shock()` | `TerraDataset` | CES supplier-removal redistribution scenario |
+
+## TERRA API
+
+`terra-package` can retrieve trade microdata, precomputed network metrics,
+aggregated time series and reference classifications from the TERRA API. API
+and local files are alternative loading routes; analytical compatibility
+depends on the data type.
+
+## Citation
+
+If you use TERRA in your research, please cite:
+
+> Bruno, M., Brogi, F., Cerasti, E., De Fausti, F., Fronzetti Colladon, A.,
+> Guardabascio, B., & Massacci, G. (2026). Exploring the Complexity of
+> International Trade Networks with TERRA. *World Trade Review*, 1–24.
+> doi:[10.1017/S1474745626101591](https://doi.org/10.1017/S1474745626101591)
+
+## Contributors
+
+- Federico Brogi
+- Giulio Massacci
+- Mauro Bruno
